@@ -3,9 +3,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import pandas as pd
+from fpdf import FPDF
+import base64
 
 # ==========================================
-# 1. CONNEXION GOOGLE SHEETS
+# 1. CONNEXION & CONFIGURATION
 # ==========================================
 def init_connection():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -33,164 +35,143 @@ else:
     st.stop()
 
 # ==========================================
-# 2. DESIGN & STYLE (SANS SIDEBAR + POLICES DOUCES)
+# 2. STYLE ET POLICES (iPad Optimisé)
 # ==========================================
-st.set_page_config(page_title="Mon BuJo Douceur", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Mon Bujo Nature", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
 <style>
-    /* Masquer la sidebar et le bouton de menu */
-    [data-testid="stSidebar"], [data-testid="stSidebarNav"] { display: none !important; }
-    button[kind="headerNoSpacing"] { display: none !important; }
+    [data-testid="stSidebar"] { display: none !important; }
+    .stApp { background: linear-gradient(135deg, #1a2e26 0%, #2d4c3e 40%, #d4a373 100%); background-attachment: fixed; }
+    
+    h1, h2, h3, .header-text { font-family: 'Comfortaa', cursive !important; color: white !important; text-align: center; }
+    .header-banner { background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 40px; margin-bottom: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); text-align: center; }
+    .header-banner h1 { color: #1a2e26 !important; margin: 0; font-size: 2rem; }
+    .date-display { font-family: 'Caveat', cursive; font-size: 1.6rem; color: #f1f1f1; text-align: center; margin-bottom: 20px; }
 
-    /* Fond Forestier Doux */
-    .stApp {
-        background: linear-gradient(135deg, #1a2e26 0%, #2d4c3e 40%, #d4a373 100%);
-        background-attachment: fixed;
-    }
+    /* Navigation */
+    div.stRadio > div { flex-direction: row; justify-content: center; gap: 10px; }
+    div.stRadio label { font-family: 'Comfortaa', sans-serif !important; background: rgba(255, 255, 255, 0.1) !important; color: white !important; padding: 10px 15px !important; border-radius: 15px !important; border: 1px solid rgba(255,255,255,0.2) !important; }
 
-    /* Titres Principaux (Comfortaa) */
-    h1, h2, h3, .header-text {
-        font-family: 'Comfortaa', cursive !important;
-        color: white !important;
-        text-align: center;
-    }
-
-    /* Bandeau Titre */
-    .header-banner { 
-        background: rgba(255, 255, 255, 0.95); 
-        padding: 25px; 
-        border-radius: 40px; 
-        margin-bottom: 15px; 
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-    .header-banner h1 { color: #1a2e26 !important; margin: 0; font-size: 2.2rem; }
-
-    /* Date Style Manuscrit */
-    .date-display {
-        font-family: 'Caveat', cursive;
-        font-size: 1.8rem;
-        color: #d4a373;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    /* Navigation Horizontale */
-    div.stRadio > div {
-        flex-direction: row;
-        justify-content: center;
-        gap: 15px;
-    }
-    div.stRadio label {
-        font-family: 'Comfortaa', sans-serif !important;
-        background: rgba(255, 255, 255, 0.15) !important;
-        color: white !important;
-        padding: 12px 25px !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-    }
-
-    /* Correction Saisie iPad (Vert d'eau sur Noir) */
-    input, textarea, [data-baseweb="select"] div {
-        color: #00ffd9 !important;
-        -webkit-text-fill-color: #00ffd9 !important;
-        font-weight: bold !important;
-        font-size: 18px !important;
-        font-family: 'Comfortaa', sans-serif !important;
-    }
-
-    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
-        background-color: #000000 !important;
-        border: 2px solid #00ffd9 !important;
-        border-radius: 15px !important;
-    }
+    /* Inputs Vert sur Noir pour iPad */
+    input, textarea, [data-baseweb="select"] div { color: #00ffd9 !important; -webkit-text-fill-color: #00ffd9 !important; font-weight: bold !important; font-family: 'Comfortaa' !important; }
+    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea { background-color: #000 !important; border: 1px solid #00ffd9 !important; border-radius: 12px !important; }
 
     /* Boutons */
-    .stButton>button {
-        background-color: #00ffd9 !important;
-        color: #1a2e26 !important;
-        border-radius: 20px;
-        font-family: 'Comfortaa', sans-serif;
-        font-weight: bold;
-        border: none;
-    }
+    .stButton>button { background-color: #00ffd9 !important; color: #1a2e26 !important; border-radius: 15px; font-weight: bold; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. INTERFACE CENTRALE
+# 3. FONCTIONS OUTILS
 # ==========================================
+def create_pdf(df_mois, mois, annee):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, f"Rapport Financier - {mois} {annee}", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(60, 10, "Categorie", 1)
+    pdf.cell(80, 10, "Libelle", 1)
+    pdf.cell(40, 10, "Montant", 1)
+    pdf.ln()
+    pdf.set_font("Arial", '', 12)
+    for index, row in df_mois.iterrows():
+        pdf.cell(60, 10, str(row['Catégorie']), 1)
+        pdf.cell(80, 10, str(row['Libellé']), 1)
+        pdf.cell(40, 10, f"{row['Montant €']} e", 1)
+        pdf.ln()
+    return pdf.output(dest='S').encode('latin-1')
 
-# Récupération du nom
+# ==========================================
+# 4. INTERFACE PRINCIPALE
+# ==========================================
 try: user_name = ws_conf.acell('A2').value or "MeyLune"
 except: user_name = "MeyLune"
 
-# 1. Le Titre
 st.markdown(f'<div class="header-banner"><h1>Journal de {user_name}</h1></div>', unsafe_allow_html=True)
 
-# 2. La Navigation
-page = st.radio("", ["📅 Daily Log", "💰 Finances", "⚙️ Config"], label_visibility="collapsed")
+page = st.radio("", ["📅 Année", "🌿 Semaine", "✍️ Mon Journal", "💰 Budget", "⚙️ Config"], 
+                index=2, label_visibility="collapsed")
 
-# 3. La Date (Juste en dessous)
 st.markdown(f'<div class="date-display">Nous sommes le {datetime.now().strftime("%d %B %Y")}</div>', unsafe_allow_html=True)
 
-st.write("---")
+# --- VUE ANNUELLE ---
+if page == "📅 Année":
+    st.markdown("### 🗺️ Vue d'ensemble 2026")
+    cols = st.columns(3)
+    mois_an = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+    for i, m in enumerate(mois_an):
+        with cols[i % 3]:
+            if st.button(m, use_container_width=True):
+                st.info(f"Visualisation des notes de {m} en cours de développement...")
 
-# --- PAGE DAILY LOG ---
-if page == "📅 Daily Log":
-    st.markdown("## 🌿 Notes du jour")
+# --- VUE SEMAINE ---
+elif page == "🌿 Semaine":
+    st.markdown(f"### 🗓️ Semaine du {datetime.now().strftime('%W')}")
+    days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    cols = st.columns(7)
+    for i, d in enumerate(days):
+        cols[i].markdown(f"**{d}**")
+        cols[i].button("📖", key=f"btn_{d}")
+
+# --- MON JOURNAL (Ex-Daily Log) ---
+elif page == "✍️ Mon Journal":
+    st.markdown("### 🍃 Ma Bulle du Jour")
     col1, col2 = st.columns([3, 1])
     with col1:
-        txt = st.text_input("Une pensée ?", placeholder="Écris ici ton secret...")
+        txt = st.text_input("Comment te sens-tu ?", placeholder="Écris ici...")
     with col2:
-        sym = st.selectbox("Style", ["🍃 Note", "📌 Tâche", "✨ Évent", "♡"])
+        sym = st.selectbox("Humeur", ["🍃 Douceur", "📌 À faire", "✨ Magique", "🔥 Urgent"])
     
-    if st.button("Enregistrer dans mon Bujo"):
+    if st.button("Ancrer cette pensée"):
         if txt:
             ws_notes.append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), sym, txt])
             st.rerun()
 
-    st.write("### Historique récent")
+    st.write("---")
     rows = ws_notes.get_all_values()
     if len(rows) > 1:
         for n in reversed(rows[1:]):
-            st.write(f"**{n[2]}** {n[3]}  *(🕒 {n[1]})*")
+            st.markdown(f"**{n[2]}** : {n[3]} *(🕒 {n[1]})*")
 
-# --- PAGE FINANCES ---
-elif page == "💰 Finances":
-    st.markdown("## 💹 Mon Petit Budget")
+# --- BUDGET (Avec Historique & PDF) ---
+elif page == "💰 Budget":
+    st.markdown("### 🪙 Mes Petites Finances")
     
-    mois_liste = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
-    c1, c2 = st.columns(2)
-    sel_mois = c1.selectbox("Mois", mois_liste, index=datetime.now().month - 1)
-    sel_annee = c2.selectbox("Année", [2025, 2026, 2027], index=1)
-
-    with st.expander("✨ Ajouter une ligne", expanded=True):
-        cat = st.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Dépense"])
-        label = st.text_input("Libellé")
-        valeur = st.number_input("Montant €", step=0.01, format="%.2f")
-        
-        if st.button(f"Ajouter à {sel_mois}"):
-            ws_fin.append_row([sel_mois, str(sel_annee), cat, label, valeur])
-            st.success("C'est enregistré avec succès !")
+    # Formulaire d'ajout
+    with st.expander("➕ Ajouter une opération", expanded=False):
+        c1, c2, c3 = st.columns(3)
+        cat = c1.selectbox("Type", ["Revenu", "Charge Fixe", "Dépense"])
+        lab = c2.text_input("Libellé")
+        val = c3.number_input("Montant", step=1.0)
+        if st.button("Enregistrer l'opération"):
+            ws_fin.append_row([datetime.now().strftime("%B"), str(datetime.now().year), cat, lab, val])
             st.rerun()
 
-    # Calculs
+    # Historique & Modification
     data = ws_fin.get_all_records()
     if data:
         df = pd.DataFrame(data)
-        df_mois = df[(df['Mois'] == sel_mois) & (df['Année'].astype(str) == str(sel_annee))]
-        if not df_mois.empty:
-            rev = df_mois[df_mois['Catégorie'] == 'Revenu']['Montant €'].sum()
-            dep = df_mois[df_mois['Catégorie'] != 'Revenu']['Montant €'].sum()
-            st.metric("Solde restant", f"{rev-dep:.2f} €", delta=f"{rev} € revenus")
+        st.write("#### Historique du mois")
+        edited_df = st.data_editor(df, num_rows="dynamic")
+        
+        if st.button("💾 Sauvegarder les modifications"):
+            ws_fin.clear()
+            ws_fin.append_row(["Mois", "Année", "Catégorie", "Libellé", "Montant €"])
+            ws_fin.append_rows(edited_df.values.tolist())
+            st.success("Base de données mise à jour !")
 
-# --- PAGE CONFIG ---
+        # PDF
+        pdf_data = create_pdf(df, "Février", "2026")
+        st.download_button("📥 Télécharger le rapport PDF", pdf_data, file_name="budget.pdf", mime="application/pdf")
+
+# --- CONFIG ---
 elif page == "⚙️ Config":
-    st.markdown("## ⚙️ Réglages")
-    new_name = st.text_input("Comment dois-je t'appeler ?", user_name)
-    if st.button("Mettre à jour le prénom"):
+    st.markdown("### 🛠️ Personnalisation")
+    new_name = st.text_input("Changer mon nom d'utilisateur :", user_name)
+    if st.button("Valider"):
         ws_conf.update_acell('A2', new_name)
-        st.success("C'est fait !")
         st.rerun()
