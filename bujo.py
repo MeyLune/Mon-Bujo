@@ -129,4 +129,80 @@ with st.sidebar:
     st.markdown(f"# 🌿 {user_name}")
     page = st.radio("Navigation", ["📅 Daily Log", "💰 Finances", "⚙️ Config"])
     st.write("---")
-    st.markdown('<div style="color:#d4a373; text-align:center; border:1px dashed #d4a373; padding:10px; border-radius:10px;">✨ E
+    st.markdown('<div style="color:#d4a373; text-align:center; border:1px dashed #d4a373; padding:10px; border-radius:10px;">✨ Espace Stickers<br>🍃 🌸 🦋 🥥</div>', unsafe_allow_html=True)
+
+# Affichage du titre dans la bannière blanche
+st.markdown(f'<div class="header-banner"><h1>Journal de {user_name}</h1></div>', unsafe_allow_html=True)
+
+# ==========================================
+# 4. PAGES
+# ==========================================
+
+# --- PAGE DAILY LOG ---
+if page == "📅 Daily Log":
+    st.markdown('<div class="bujo-card">', unsafe_allow_html=True)
+    st.subheader(f"Aujourd'hui, le {datetime.now().strftime('%d %B %Y')}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        txt = st.text_input("Nouvelle pensée...", placeholder="Quoi de neuf ?", key="in_note")
+    with col2:
+        sym = st.selectbox("Style", ["🍃 Note", "📌 Tâche", "✨ Événement", "♡"])
+    
+    if st.button("Enregistrer"):
+        if txt:
+            ws_notes.append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), sym, txt])
+            st.success("Note enregistrée sur Google Sheets !")
+            st.rerun()
+
+    st.write("---")
+    rows = ws_notes.get_all_values()
+    if len(rows) > 1:
+        for n in reversed(rows[1:]):
+            st.markdown(f"**{n[2]}** {n[3]}  *(🕒 {n[1]})*")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Zone Note Libre
+    st.markdown("### 🖋️ Note à la main ici")
+    note_libre = st.text_area("Libère ton esprit...", "Écris tes pensées ici pour les voir en cursive...", label_visibility="collapsed")
+    st.markdown(f'<div class="handwritten-note">{note_libre}</div>', unsafe_allow_html=True)
+
+# --- PAGE FINANCES ---
+elif page == "💰 Finances":
+    st.markdown('<div class="bujo-card">', unsafe_allow_html=True)
+    st.title("💹 Mes Finances")
+    
+    c_type = st.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Variable"])
+    col_l, col_m = st.columns(2)
+    f_label = col_l.text_input("Désignation")
+    f_amount = col_m.number_input("Montant €", min_value=0.0)
+    
+    if st.button("Valider l'opération"):
+        ws_fin.append_row([datetime.now().strftime("%B"), c_type, f_label, f_amount])
+        st.success("Donnée financière synchronisée !")
+        st.rerun()
+    
+    st.write("---")
+    # Récupération et calcul des totaux
+    data = ws_fin.get_all_records()
+    if data:
+        # On remplace les virgules par des points pour être sûr du calcul
+        total_rev = sum(float(str(i['Montant €']).replace(',','.')) for i in data if i['Catégorie'] == 'Revenu')
+        total_dep = sum(float(str(i['Montant €']).replace(',','.')) for i in data if i['Catégorie'] != 'Revenu')
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Revenus", f"{total_rev} €")
+        c2.metric("Dépenses", f"{total_dep} €", delta=f"-{total_dep}", delta_color="inverse")
+        c3.metric("Reste à vivre", f"{total_rev - total_dep} €")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- PAGE CONFIG ---
+elif page == "⚙️ Config":
+    st.markdown('<div class="bujo-card">', unsafe_allow_html=True)
+    st.title("⚙️ Personnalisation")
+    new_name = st.text_input("Modifier ton prénom :", user_name)
+    if st.button("Sauvegarder les modifications"):
+        ws_conf.update_acell('A2', new_name)
+        st.success("Prénom mis à jour !")
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
