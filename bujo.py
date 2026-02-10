@@ -26,12 +26,15 @@ def init_connection():
         return None
 
 sh = init_connection()
-ws_notes = sh.worksheet("Note")
-ws_fin = sh.worksheet("Finances")
-ws_conf = sh.worksheet("Config")
+if sh:
+    ws_notes = sh.worksheet("Note")
+    ws_fin = sh.worksheet("Finances")
+    ws_conf = sh.worksheet("Config")
+else:
+    st.stop()
 
 # ==========================================
-# 2. DESIGN & STYLE
+# 2. DESIGN & STYLE (iPad Optimized)
 # ==========================================
 st.set_page_config(page_title="Mon BuJo Enchanté", layout="wide")
 
@@ -45,10 +48,10 @@ st.markdown("""
     }
     .header-banner { background-color: white; padding: 15px; border-radius: 50px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     .header-banner h1 { color: #1a2e26 !important; margin: 0; font-family: 'Playfair Display', serif; }
-    .bujo-card { background-color: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 20px; color: white; }
-    .handwritten-note { background-color: #fff9c4; font-family: 'Caveat', cursive; font-size: 24px; padding: 20px; border-radius: 5px; border-left: 6px solid #fbc02d; color: #5d4037 !important; box-shadow: 3px 3px 10px rgba(0,0,0,0.2); }
+    .bujo-card { background-color: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; color: #1a2e26; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .handwritten-note { background-color: #fff9c4; font-family: 'Caveat', cursive; font-size: 26px; padding: 20px; border-radius: 5px; border-left: 6px solid #fbc02d; color: #5d4037 !important; }
     [data-testid="stSidebar"] { background-color: #0e1a15 !important; border-right: 2px solid #d4a373; }
-    .stat-card { background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; text-align: center; color: #1a2e26; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .stat-card { background: white; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #d4a373; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -60,12 +63,13 @@ with st.sidebar:
     st.markdown(f"## 🌿 {user_name}")
     page = st.radio("Navigation", ["📅 Daily Log", "💰 Finances", "⚙️ Config"])
     st.write("---")
-    st.markdown('<div style="color:#d4a373; text-align:center;">✨ Espace Stickers<br>🍃 🌸 🦋 🥥</div>', unsafe_allow_html=True)
+    st.info(f"📅 {datetime.now().strftime('%d %B %Y')}")
 
 st.markdown(f'<div class="header-banner"><h1>Journal de {user_name}</h1></div>', unsafe_allow_html=True)
 
 # --- PAGE DAILY LOG ---
 if page == "📅 Daily Log":
+    st.markdown('<div class="bujo-card">', unsafe_allow_html=True)
     st.subheader(f"Aujourd'hui, le {datetime.now().strftime('%d %B %Y')}")
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -82,95 +86,85 @@ if page == "📅 Daily Log":
     rows = ws_notes.get_all_values()
     if len(rows) > 1:
         for n in reversed(rows[1:]):
-            st.markdown(f"**{n[2]}** {n[3]}  *(🕒 {n[1]})*")
+            st.write(f"**{n[2]}** {n[3]}  *(🕒 {n[1]})*")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("### 🖋️ Note à la main ici")
-    note_libre = st.text_area("Tape ici...", label_visibility="collapsed")
+    note_libre = st.text_area("Libre court à ton imagination...", label_visibility="collapsed")
     st.markdown(f'<div class="handwritten-note">{note_libre}</div>', unsafe_allow_html=True)
 
 # --- PAGE FINANCES ---
 elif page == "💰 Finances":
     st.title("💹 Gestion Budgétaire")
     
-    # 1. SÉLECTION PÉRIODE
+    # Sélection Période
     mois_liste = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
-    col_m, col_a = st.columns(2)
-    sel_mois = col_m.selectbox("Choisir le mois", mois_liste, index=datetime.now().month - 1)
-    sel_annee = col_a.selectbox("Choisir l'année", [2025, 2026, 2027], index=1)
+    c1, c2 = st.columns(2)
+    sel_mois = c1.selectbox("Choisir le mois", mois_liste, index=datetime.now().month - 1)
+    sel_annee = c2.selectbox("Choisir l'année", [2025, 2026, 2027], index=1)
 
-    # 2. AJOUT OPÉRATION
+    # Ajout Opération
     with st.expander("➕ Ajouter une opération", expanded=False):
-        # Ordre demandé : Revenu, Charge Fixe, Dépense
         cat = st.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Dépense"])
         col_l, col_v = st.columns(2)
-        label = col_l.text_input("Libellé")
+        label = col_l.text_input("Libellé (ex: Loyer, Salaire...)")
         valeur = col_v.number_input("Montant €", min_value=0.0)
         
-        if st.button("Ajouter au mois de " + sel_mois):
-            # Format dans Sheets : Mois | Année | Catégorie | Libellé | Montant
+        if st.button(f"Ajouter à {sel_mois} {sel_annee}"):
             ws_fin.append_row([sel_mois, str(sel_annee), cat, label, valeur])
-            st.success("Enregistré !")
+            st.success("Opération ajoutée !")
             st.rerun()
 
-    st.write("---")
-
-    # 3. RÉCUPÉRATION DES DONNÉES DU MOIS
-    all_fin = ws_fin.get_all_records()
-    df = pd.DataFrame(all_fin)
-    
-    if not df.empty:
-        # Filtrage
-        df_mois = df[(df['Mois'] == sel_mois) & (df['Année'].astype(str) == str(sel_annee))]
-        
-        # Calculs
-        def to_float(x): return float(str(x).replace(',', '.')) if x else 0.0
-        
-        rev = sum(df_mois[df_mois['Catégorie'] == 'Revenu']['Montant €'].apply(to_float))
-        fix = sum(df_mois[df_mois['Catégorie'] == 'Charge Fixe']['Montant €'].apply(to_float))
-        dep = sum(df_mois[df_mois['Catégorie'] == 'Dépense']['Montant €'].apply(to_float))
-        total_dep = fix + dep
-        reste = rev - total_dep
-
-        # 4. CARTES VISUELLES (RÉSUMÉ)
-        st.markdown(f"### 📊 Résumé de {sel_mois} {sel_annee}")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: st.markdown(f'<div class="stat-card"><b>💰 Revenus</b><br><span style="font-size:20px; color:green">+{rev} €</span></div>', unsafe_allow_html=True)
-        with c2: st.markdown(f'<div class="stat-card"><b>🏠 Fixe</b><br><span style="font-size:20px; color:orange">-{fix} €</span></div>', unsafe_allow_html=True)
-        with c3: st.markdown(f'<div class="stat-card"><b>🛒 Dépenses</b><br><span style="font-size:20px; color:red">-{dep} €</span></div>', unsafe_allow_html=True)
-        with c4: st.markdown(f'<div class="stat-card"><b>✨ Reste</b><br><span style="font-size:20px; color:blue">{reste} €</span></div>', unsafe_allow_html=True)
-
-        # 5. HISTORIQUE DU MOIS
-        st.write("")
-        st.markdown(f"#### 📜 Historique détaillé")
-        if not df_mois.empty:
-            st.dataframe(df_mois[['Catégorie', 'Libellé', 'Montant €']], use_container_width=True)
+    # Lecture des données
+    data = ws_fin.get_all_records()
+    if data:
+        df = pd.DataFrame(data)
+        # On s'assure que les colonnes indispensables existent pour éviter le plantage
+        if 'Mois' in df.columns and 'Année' in df.columns:
+            df_mois = df[(df['Mois'] == sel_mois) & (df['Année'].astype(str) == str(sel_annee))]
             
-            # 6. GÉNÉRATION PDF
-            if st.button("📥 Générer le rapport PDF"):
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_font("Arial", 'B', 16)
-                pdf.cell(200, 10, txt=f"Rapport Budget - {sel_mois} {sel_annee}", ln=True, align='C')
-                pdf.set_font("Arial", size=12)
-                pdf.ln(10)
-                pdf.cell(200, 10, txt=f"Total Revenus : {rev} EUR", ln=True)
-                pdf.cell(200, 10, txt=f"Total Charges Fixes : {fix} EUR", ln=True)
-                pdf.cell(200, 10, txt=f"Total Depenses : {dep} EUR", ln=True)
-                pdf.cell(200, 10, txt=f"Reste a vivre : {reste} EUR", ln=True)
-                pdf.ln(5)
-                pdf.cell(200, 10, txt="Details des operations :", ln=True)
-                for index, row in df_mois.iterrows():
-                    pdf.cell(200, 8, txt=f"- {row['Catégorie']} : {row['Libellé']} ({row['Montant €']} EUR)", ln=True)
-                
-                pdf_output = pdf.output(dest='S').encode('latin-1')
-                st.download_button(label="Clicker ici pour télécharger", data=pdf_output, file_name=f"Budget_{sel_mois}.pdf", mime="application/pdf")
+            if not df_mois.empty:
+                # Calculs
+                def clean_val(x): return float(str(x).replace(',', '.'))
+                rev = df_mois[df_mois['Catégorie'] == 'Revenu']['Montant €'].apply(clean_val).sum()
+                fix = df_mois[df_mois['Catégorie'] == 'Charge Fixe']['Montant €'].apply(clean_val).sum()
+                dep = df_mois[df_mois['Catégorie'] == 'Dépense']['Montant €'].apply(clean_val).sum()
+                reste = rev - fix - dep
+
+                # Résumé Visuel
+                st.write("---")
+                cols = st.columns(4)
+                cols[0].markdown(f'<div class="stat-card">🟢 <b>Revenu</b><br>{rev} €</div>', unsafe_allow_html=True)
+                cols[1].markdown(f'<div class="stat-card">🟠 <b>Fixe</b><br>{fix} €</div>', unsafe_allow_html=True)
+                cols[2].markdown(f'<div class="stat-card">🔴 <b>Dépense</b><br>{dep} €</div>', unsafe_allow_html=True)
+                cols[3].markdown(f'<div class="stat-card" style="background:#e3f2fd">💎 <b>Reste</b><br>{reste} €</div>', unsafe_allow_html=True)
+
+                # Historique
+                st.write("### 📜 Historique")
+                st.dataframe(df_mois[['Catégorie', 'Libellé', 'Montant €']], use_container_width=True)
+
+                # PDF
+                if st.button("📥 Télécharger le rapport PDF"):
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.set_font("Arial", 'B', 16)
+                    pdf.cell(200, 10, f"Rapport Budget - {sel_mois} {sel_annee}", ln=True, align='C')
+                    pdf.ln(10)
+                    pdf.set_font("Arial", size=12)
+                    pdf.cell(200, 10, f"Revenu total : {rev} EUR", ln=True)
+                    pdf.cell(200, 10, f"Dépenses : {fix+dep} EUR", ln=True)
+                    pdf.cell(200, 10, f"Reste : {reste} EUR", ln=True)
+                    pdf_output = pdf.output(dest='S').encode('latin-1')
+                    st.download_button("Télécharger le fichier", data=pdf_output, file_name=f"Budget_{sel_mois}.pdf")
+            else:
+                st.info(f"Aucune donnée enregistrée pour {sel_mois} {sel_annee}.")
         else:
-            st.info("Aucune donnée pour ce mois.")
+            st.error("Ton Google Sheets n'a pas les bonnes colonnes. Ajoute 'Mois' et 'Année' en ligne 1.")
 
 # --- PAGE CONFIG ---
 elif page == "⚙️ Config":
     st.title("⚙️ Paramètres")
-    new_name = st.text_input("Ton prénom :", user_name)
+    new_name = st.text_input("Changer mon prénom :", user_name)
     if st.button("Sauvegarder"):
         ws_conf.update_acell('A2', new_name)
         st.rerun()
