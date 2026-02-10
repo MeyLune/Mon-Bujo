@@ -41,28 +41,20 @@ st.set_page_config(page_title="Mon BuJo Enchanté", layout="wide")
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
 <style>
-    /* Fond principal */
     .stApp {
         background: linear-gradient(135deg, #1a2e26 0%, #2d4c3e 40%, #d4a373 100%);
         background-image: url('https://www.transparenttextures.com/patterns/leaf.png'), linear-gradient(135deg, #1a2e26 0%, #2d4c3e 40%, #d4a373 100%);
         background-attachment: fixed;
     }
-
-    /* Titres et Bannières */
     .header-banner { background-color: white; padding: 15px; border-radius: 50px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     .header-banner h1 { color: #1a2e26 !important; margin: 0; font-family: 'Playfair Display', serif; }
-
-    /* --- TRANSFORMATION VERT D'EAU --- */
     div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
         background-color: #e0f2f1 !important;
         color: #1a2e26 !important;
         border-radius: 10px !important;
         border: 1px solid #80cbc4 !important;
     }
-    
     input { color: #1a2e26 !important; }
-
-    /* --- CARTES DE STATISTIQUES --- */
     .stat-card {
         background: white;
         padding: 15px;
@@ -73,11 +65,7 @@ st.markdown("""
     }
     .stat-card b { color: #1a2e26 !important; font-size: 16px; display: block; margin-bottom: 5px; }
     .stat-value { font-size: 22px; font-weight: bold; }
-
-    /* Note manuscrite */
     .handwritten-note { background-color: #fff9c4; font-family: 'Caveat', cursive; font-size: 26px; padding: 20px; border-radius: 5px; border-left: 6px solid #fbc02d; color: #5d4037 !important; }
-
-    /* Sidebar et Boutons */
     [data-testid="stSidebar"] { background-color: #0e1a15 !important; border-right: 2px solid #d4a373; }
     .stButton>button {
         background-color: #80cbc4 !important;
@@ -140,14 +128,14 @@ elif page == "💰 Finances":
     with st.expander("➕ Ajouter une opération", expanded=False):
         cat = st.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Dépense"])
         label = st.text_input("Libellé")
-        valeur = st.number_input("Montant €", min_value=0.0, step=1.0)
+        # Correction ici : ajout de step=0.01 pour les virgules
+        valeur = st.number_input("Montant €", min_value=0.0, step=0.01, format="%.2f")
         
         if st.button(f"Ajouter à {sel_mois}"):
             ws_fin.append_row([sel_mois, str(sel_annee), cat, label, valeur])
             st.success("Opération enregistrée !")
             st.rerun()
 
-    # --- PARTIE HISTORIQUE INTERACTIF ---
     data = ws_fin.get_all_records()
     if data:
         df_full = pd.DataFrame(data)
@@ -157,15 +145,15 @@ elif page == "💰 Finances":
         if not df_mois.empty:
             st.write("---")
             st.write("### 📜 Historique (Modifier ou Supprimer)")
-            st.info("💡 Modifie une case et clique sur 'Enregistrer'. Coche 'Suppr' pour retirer.")
-
+            
             df_mois.insert(0, "Suppr", False)
 
+            # Correction de l'éditeur pour accepter les virgules
             edited_df = st.data_editor(
                 df_mois,
                 column_config={
                     "Suppr": st.column_config.CheckboxColumn("Suppr"),
-                    "Montant €": st.column_config.NumberColumn("Montant €", format="%.2f €"),
+                    "Montant €": st.column_config.NumberColumn("Montant €", step=0.01, format="%.2f €"),
                     "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Revenu", "Charge Fixe", "Dépense"])
                 },
                 disabled=["Mois", "Année"],
@@ -189,8 +177,10 @@ elif page == "💰 Finances":
                 ws_fin.update([final_df.columns.values.tolist()] + final_df.values.tolist())
                 st.rerun()
 
-            # --- RÉSUMÉ VISUEL ---
-            def clean_val(x): return float(str(x).replace(',', '.'))
+            def clean_val(x):
+                try: return float(str(x).replace(',', '.'))
+                except: return 0.0
+                
             rev = df_mois[df_mois['Catégorie'] == 'Revenu']['Montant €'].apply(clean_val).sum()
             fix = df_mois[df_mois['Catégorie'] == 'Charge Fixe']['Montant €'].apply(clean_val).sum()
             dep = df_mois[df_mois['Catégorie'] == 'Dépense']['Montant €'].apply(clean_val).sum()
@@ -198,19 +188,10 @@ elif page == "💰 Finances":
 
             st.write("---")
             cols = st.columns(4)
-            cols[0].markdown(f'<div class="stat-card"><b>🟢 Revenu</b><div class="stat-value" style="color:#2e7d32">{rev} €</div></div>', unsafe_allow_html=True)
-            cols[1].markdown(f'<div class="stat-card"><b>🟠 Fixe</b><div class="stat-value" style="color:#e65100">{fix} €</div></div>', unsafe_allow_html=True)
-            cols[2].markdown(f'<div class="stat-card"><b>🔴 Dépense</b><div class="stat-value" style="color:#c62828">{dep} €</div></div>', unsafe_allow_html=True)
-            cols[3].markdown(f'<div class="stat-card" style="background:#e1f5fe"><b>💎 Reste</b><div class="stat-value" style="color:#0277bd">{reste} €</div></div>', unsafe_allow_html=True)
-
-            # Export PDF
-            if st.button("📥 Rapport PDF"):
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_font("Arial", 'B', 16)
-                pdf.cell(200, 10, f"Rapport Budget - {sel_mois} {sel_annee}", ln=True, align='C')
-                pdf_output = pdf.output(dest='S').encode('latin-1')
-                st.download_button("Télécharger", data=pdf_output, file_name=f"Budget_{sel_mois}.pdf")
+            cols[0].markdown(f'<div class="stat-card"><b>🟢 Revenu</b><div class="stat-value" style="color:#2e7d32">{rev:.2f} €</div></div>', unsafe_allow_html=True)
+            cols[1].markdown(f'<div class="stat-card"><b>🟠 Fixe</b><div class="stat-value" style="color:#e65100">{fix:.2f} €</div></div>', unsafe_allow_html=True)
+            cols[2].markdown(f'<div class="stat-card"><b>🔴 Dépense</b><div class="stat-value" style="color:#c62828">{dep:.2f} €</div></div>', unsafe_allow_html=True)
+            cols[3].markdown(f'<div class="stat-card" style="background:#e1f5fe"><b>💎 Reste</b><div class="stat-value" style="color:#0277bd">{reste:.2f} €</div></div>', unsafe_allow_html=True)
         else:
             st.info("Aucune donnée pour ce mois.")
 
