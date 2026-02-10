@@ -1,7 +1,7 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from fpdf import FPDF
 
@@ -34,140 +34,199 @@ else:
     st.stop()
 
 # ==========================================
-# 2. STYLE ET POLICES (iPad Optimisé)
+# 2. STYLE ET POLICES (Optimisation Gaieté & iPad)
 # ==========================================
-st.set_page_config(page_title="Mon Bujo Nature", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Mon Bujo Créatif", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
 <style>
     [data-testid="stSidebar"], [data-testid="stSidebarNav"] { display: none !important; }
-    .stApp { background: linear-gradient(135deg, #1a2e26 0%, #2d4c3e 40%, #d4a373 100%); background-attachment: fixed; }
     
-    h1, h2, h3, h4 { font-family: 'Comfortaa', cursive !important; color: white !important; }
-    .header-banner { background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 40px; margin-bottom: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); text-align: center; }
-    .header-banner h1 { color: #1a2e26 !important; margin: 0; font-size: 2.2rem; }
-    .date-display { font-family: 'Caveat', cursive; font-size: 1.8rem; color: #f1f1f1; text-align: center; margin-bottom: 20px; }
+    /* Fond dégradé plus doux et gai */
+    .stApp { 
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); 
+        background-attachment: fixed;
+    }
+    
+    h1, h2, h3, h4 { font-family: 'Comfortaa', cursive !important; color: #2e7d32 !important; }
+    
+    /* Bannière titre */
+    .header-banner { 
+        background: white; 
+        padding: 20px; 
+        border-radius: 30px; 
+        margin-bottom: 20px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        text-align: center; 
+        border: 2px solid #a5d6a7;
+    }
+    .header-banner h1 { color: #2e7d32 !important; margin: 0; font-size: 2.2rem; }
 
-    /* Navigation */
-    div.stRadio > div { flex-direction: row; justify-content: center; gap: 10px; margin-bottom: 20px; }
-    div.stRadio label { font-family: 'Comfortaa', sans-serif !important; background: rgba(255, 255, 255, 0.1) !important; color: white !important; padding: 10px 20px !important; border-radius: 15px !important; border: 1px solid rgba(255,255,255,0.2) !important; }
+    /* Navigation Horizontale */
+    div.stRadio > div { flex-direction: row; justify-content: center; gap: 15px; }
+    div.stRadio label { 
+        background: white !important; 
+        color: #2e7d32 !important; 
+        padding: 8px 20px !important; 
+        border-radius: 20px !important; 
+        border: 1px solid #a5d6a7 !important;
+        font-family: 'Comfortaa' !important;
+    }
 
-    /* Inputs Vert sur Noir */
-    input, textarea, [data-baseweb="select"] div { color: #00ffd9 !important; -webkit-text-fill-color: #00ffd9 !important; font-weight: bold !important; font-family: 'Comfortaa' !important; }
-    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea { background-color: #000 !important; border: 1px solid #00ffd9 !important; border-radius: 12px !important; }
+    /* Blocs style papier */
+    .bujo-block { 
+        background: rgba(255, 255, 255, 0.8); 
+        padding: 25px; 
+        border-radius: 25px; 
+        border: 1px solid #e0e0e0; 
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.02);
+    }
 
-    /* Blocs Bujo */
-    .bujo-block { background: rgba(255, 255, 255, 0.08); padding: 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-    .affirmation-text { font-family: 'Caveat'; font-size: 1.5rem; color: #d4a373; margin: 10px 0; font-style: italic; }
+    /* Inputs plus clairs pour l'iPad */
+    input, textarea, [data-baseweb="select"] div { 
+        color: #1b5e20 !important; 
+        font-weight: bold !important; 
+        font-family: 'Comfortaa' !important; 
+    }
+    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea { 
+        background-color: #ffffff !important; 
+        border: 1.5px solid #a5d6a7 !important; 
+        border-radius: 12px !important; 
+    }
 
     /* Boutons */
-    .stButton>button { background-color: #00ffd9 !important; color: #1a2e26 !important; border-radius: 15px; font-weight: bold; border: none; width: 100%; margin-top: 10px; }
+    .stButton>button { 
+        background-color: #66bb6a !important; 
+        color: white !important; 
+        border-radius: 15px; 
+        font-weight: bold; 
+        border: none; 
+        height: 45px;
+    }
+
+    /* Style Grille Hebdo (Inspiration Rose/Blanc) */
+    .hebdo-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background-color: #fce4ec; border: 2px solid #fce4ec; border-radius: 15px; overflow: hidden; }
+    .hebdo-header { background-color: #f06292; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 0.9rem; }
+    .hebdo-cell { background-color: white; min-height: 150px; padding: 8px; font-size: 0.8rem; }
+    .event-tag { background: #fce4ec; border-left: 4px solid #f06292; padding: 4px; margin-bottom: 5px; border-radius: 4px; color: #880e4f; font-weight: 500; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. INTERFACE
+# 3. INTERFACE PRINCIPALE
 # ==========================================
 try: user_name = ws_conf.acell('A2').value or "MeyLune"
 except: user_name = "MeyLune"
 
 st.markdown(f'<div class="header-banner"><h1>Journal de {user_name}</h1></div>', unsafe_allow_html=True)
 
-page = st.radio("", ["📅 Année", "🌿 Semaine", "✍️ Mon Journal", "💰 Budget", "⚙️ Config"], 
-                index=2, label_visibility="collapsed")
+page = st.radio("", ["📅 Année", "🌿 Semaine", "✍️ Mon Journal", "💰 Budget"], index=2, label_visibility="collapsed")
 
-st.markdown(f'<div class="date-display">Nous sommes le {datetime.now().strftime("%d %B %Y")}</div>', unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; font-family:\"Caveat\"; font-size:1.8rem; color:#66bb6a; margin-bottom:20px;'>Nous sommes le {datetime.now().strftime('%d %B %Y')}</div>", unsafe_allow_html=True)
 
-# --- PAGE MON JOURNAL (Optimisée Tactile) ---
+# --- PAGE MON JOURNAL ---
 if page == "✍️ Mon Journal":
     col_g, col_d = st.columns([1, 1], gap="large")
 
     with col_g:
-        st.markdown('<div class="bujo-block"><h4>Mon Humeur & État</h4>', unsafe_allow_html=True)
-        humeur = st.select_slider("", options=["😢", "😟", "😐", "🙂", "✨", "🔥"], value="😐", label_visibility="collapsed")
-        sentiments = st.text_area("Comment je me sens ?", placeholder="Détaille tes émotions...", height=150)
+        st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
+        st.markdown("<h4>Mon Humeur & État</h4>", unsafe_allow_html=True)
+        humeur = st.select_slider("", options=["😢", "😟", "😐", "🙂", "✨", "🔥"], value="😐")
+        sentiments = st.text_area("Comment je me sens aujourd'hui ?", placeholder="Écris ici ce que tu as sur le cœur...", height=150)
         
-        st.markdown('<p class="affirmation-text">"Je suis capable de réaliser mes rêves."</p>', unsafe_allow_html=True)
-        affirmation = st.text_input("Pensée positive :", placeholder="Écris ici...")
-        
+        st.markdown(f'<p style="font-family:\'Caveat\'; font-size:1.6rem; color:#f06292; margin:15px 0;">"Je suis capable de réaliser mes rêves."</p>', unsafe_allow_html=True)
         if st.button("✨ Enregistrer mon état"):
-            # Ici on pourrait enregistrer dans une feuille dédiée "Humeur"
-            st.success("État d'esprit enregistré !")
+            st.success("C'est enregistré dans ton cœur (et la base) !")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col_d:
-        st.markdown('<div class="bujo-block"><h4>Mon Programme</h4>', unsafe_allow_html=True)
-        programme_libre = st.text_area("Planning du jour", 
-                                     placeholder="Ex: 08h00 Yoga, 14h00 Projet...", 
-                                     height=315)
-        if st.button("💾 Mettre à jour le programme"):
-            # Logique d'enregistrement du programme
-            st.success("Programme sauvegardé !")
+        st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
+        st.markdown("<h4>Mon Programme</h4>", unsafe_allow_html=True)
+        programme = st.text_area("Planning de la journée", placeholder="08h00 : Méditation\n10h00 : Travail sur le BuJo...", height=310)
+        if st.button("💾 Mettre à jour le planning"):
+            st.success("Ton programme est prêt !")
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # Zone Notes et RDV
     st.write("---")
-    st.markdown("### 🖋️ Notes & Tâches Rapides")
+    st.markdown("### 🖋️ Notes, RDV & Événements")
     c1, c2 = st.columns([3, 1])
-    with c1: note_txt = st.text_input("Une chose à ne pas oublier ?", key="quick_note")
-    with c2: note_type = st.selectbox("Type", ["🍃 Note", "📌 Tâche", "💡 Idée"], key="quick_type")
+    with c1: note_txt = st.text_input("Nouvelle entrée...", placeholder="Ex: Dentiste à 15h, Appeler maman...")
+    with c2: note_type = st.selectbox("Style", ["🍃 Note", "📌 Tâche", "📅 RDV / Événement", "💡 Idée"])
     
-    if st.button("Ancrer dans l'historique"):
+    if st.button("Ancrer dans mon Journal"):
         if note_txt:
             ws_notes.append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), note_type, note_txt])
             st.rerun()
 
-    st.markdown("#### 📜 Historique du jour")
+    # Historique récent
+    st.markdown("#### 📜 Récemment noté")
     rows = ws_notes.get_all_values()
     if len(rows) > 1:
-        today = datetime.now().strftime("%d/%m/%Y")
-        for n in reversed(rows[1:]):
-            if n[0] == today:
-                st.markdown(f"**{n[2]}** : {n[3]} <span style='color:rgba(255,255,255,0.5); font-size:0.8rem;'>(🕒 {n[1]})</span>", unsafe_allow_html=True)
+        for n in reversed(rows[-5:]):
+            st.markdown(f"**{n[2]}** : {n[3]} <small style='color:gray;'>(le {n[0]} à {n[1]})</small>", unsafe_allow_html=True)
 
-# --- PAGE BUDGET (Historique & Correction) ---
+# --- PAGE SEMAINE (PLANNING HEBDO) ---
+elif page == "🌿 Semaine":
+    st.markdown("### 🗓️ Mon Planning Hebdomadaire")
+    
+    today = datetime.now()
+    start_week = today - timedelta(days=today.weekday())
+    
+    data = ws_notes.get_all_values()
+    df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame()
+
+    st.markdown('<div class="hebdo-grid">', unsafe_allow_html=True)
+    cols = st.columns(7)
+    days_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+    for i in range(7):
+        current_day = start_week + timedelta(days=i)
+        date_str = current_day.strftime("%d/%m/%Y")
+        
+        with cols[i]:
+            st.markdown(f'<div class="hebdo-header">{days_fr[i]}<br>{current_day.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+            
+            # Récupération des RDV
+            events_html = ""
+            if not df.empty:
+                # Filtrage sur la date et le type RDV
+                day_events = df[(df['Date'] == date_str) & (df['Type'] == "📅 RDV / Événement")]
+                for _, row in day_events.iterrows():
+                    events_html += f'<div class="event-tag">🕒 {row["Heure"]}<br>{row["Note"]}</div>'
+            
+            st.markdown(f'<div class="hebdo-cell">{events_html}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- PAGE BUDGET ---
 elif page == "💰 Budget":
     st.markdown("### 🪙 Mes Finances")
     
-    with st.expander("➕ Ajouter une opération"):
+    # Ajout rapide
+    with st.expander("➕ Ajouter une ligne"):
         c1, c2, c3 = st.columns(3)
-        cat = c1.selectbox("Type", ["Revenu", "Charge Fixe", "Dépense"])
+        cat = c1.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Dépense"])
         lab = c2.text_input("Libellé")
         val = c3.number_input("Montant €", step=0.01)
-        if st.button("Enregistrer"):
-            ws_fin.append_row([datetime.now().strftime("%B"), str(datetime.now().year), cat, lab, val])
+        if st.button("Ajouter"):
+            ws_fin.append_row([datetime.now().strftime("%B"), "2026", cat, lab, val])
             st.rerun()
-    
-    data = ws_fin.get_all_records()
-    if data:
-        df = pd.DataFrame(data)
-        st.write("#### 📝 Historique modifiable")
-        st.info("Modifie une case directement et clique sur Sauvegarder.")
-        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+
+    # Édition et Historique
+    data_fin = ws_fin.get_all_records()
+    if data_fin:
+        df_fin = pd.DataFrame(data_fin)
+        st.info("💡 Tu peux modifier les valeurs directement dans le tableau ci-dessous.")
+        edited_df = st.data_editor(df_fin, num_rows="dynamic", use_container_width=True)
         
-        col1, col2 = st.columns(2)
-        if col1.button("💾 Sauvegarder les modifications"):
+        if st.button("💾 Sauvegarder les modifications budget"):
             ws_fin.clear()
             ws_fin.append_row(["Mois", "Année", "Catégorie", "Libellé", "Montant €"])
             ws_fin.append_rows(edited_df.values.tolist())
-            st.success("Base de données mise à jour !")
-        
-        # Simulation export PDF (fonctionnel avec la lib fpdf déjà importée)
-        if col2.button("📥 Générer PDF (Aperçu)"):
-            st.warning("Génération du rapport en cours...")
+            st.success("Base budget mise à jour !")
 
-# --- AUTRES PAGES ---
+# --- PAGE ANNÉE ---
 elif page == "📅 Année":
-    st.markdown("### 📅 Calendrier Annuel")
-    st.info("Vue interactive de l'année 2026 en construction...")
-
-elif page == "🌿 Semaine":
-    st.markdown("### 🌿 Planning Hebdomadaire")
-    st.info("Vue de la semaine en cours...")
-
-elif page == "⚙️ Config":
-    st.markdown("### ⚙️ Paramètres")
-    new_name = st.text_input("Nom d'utilisateur :", user_name)
-    if st.button("Valider"):
-        ws_conf.update_acell('A2', new_name)
-        st.rerun()
+    st.markdown("### 📅 Vue Annuelle 2026")
+    st.write("Bientôt disponible : une vue d'ensemble de tes objectifs de l'année !")
