@@ -33,7 +33,7 @@ else:
     st.stop()
 
 # ==========================================
-# 2. STYLE ET POLICES (Correction Contraste)
+# 2. STYLE ET POLICES (iPad Optimisé & Clair)
 # ==========================================
 st.set_page_config(page_title="Mon Bujo Créatif", layout="wide", initial_sidebar_state="collapsed")
 
@@ -41,72 +41,33 @@ st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
 <style>
     [data-testid="stSidebar"], [data-testid="stSidebarNav"] { display: none !important; }
+    .stApp { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); background-attachment: fixed; }
     
-    /* Fond dégradé Sauge & Sable */
-    .stApp { 
-        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); 
-        background-attachment: fixed;
-    }
+    /* Textes en vert foncé pour la lisibilité */
+    h1, h2, h3, h4, p, span, label { font-family: 'Comfortaa', cursive !important; color: #1b5e20 !important; }
+
+    .header-banner { background: white; padding: 20px; border-radius: 30px; margin-bottom: 20px; text-align: center; border: 2px solid #a5d6a7; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header-banner h1 { color: #1b5e20 !important; margin: 0; }
+
+    /* Grille Hebdomadaire Style "Clendar Planner" (Rose & Blanc) */
+    .planner-container { background-color: #fce4ec; padding: 10px; border-radius: 10px; border: 1px solid #f8bbd0; }
+    .planner-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #f8bbd0; }
+    .planner-header { background-color: #f06292; color: white !important; padding: 12px; text-align: center; font-weight: bold; font-size: 0.9rem; }
+    .planner-cell { background-color: white; min-height: 250px; padding: 8px; font-size: 0.8rem; overflow-y: auto; }
+    .event-item { background: #fff1f3; border-left: 3px solid #f06292; padding: 4px; margin-bottom: 6px; border-radius: 4px; color: #880e4f !important; line-height: 1.2; }
+
+    /* Blocs Bujo */
+    .bujo-block { background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 20px; border: 1px solid #c8e6c9; margin-bottom: 15px; }
     
-    /* Correction globale des textes : Vert Foncé au lieu de Blanc */
-    h1, h2, h3, h4, p, span, label, .stMarkdown { 
-        font-family: 'Comfortaa', cursive !important; 
-        color: #2e7d32 !important; 
-    }
-
-    /* Bannière titre */
-    .header-banner { 
-        background: white; 
-        padding: 20px; 
-        border-radius: 30px; 
-        margin-bottom: 20px; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-        text-align: center; 
-        border: 2px solid #a5d6a7;
-    }
-    .header-banner h1 { color: #1b5e20 !important; margin: 0; font-size: 2.2rem; }
-
-    /* Blocs style papier velouté */
-    .bujo-block { 
-        background: rgba(255, 255, 255, 0.9); 
-        padding: 25px; 
-        border-radius: 25px; 
-        border: 1px solid #c8e6c9; 
-        box-shadow: 4px 4px 15px rgba(0,0,0,0.03);
-        margin-bottom: 20px;
-    }
-
-    /* Inputs : Texte foncé sur fond blanc/noir pour lisibilité */
-    input, textarea, [data-baseweb="select"] div { 
-        color: #1b5e20 !important; 
-        font-weight: bold !important; 
-    }
-    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea { 
-        background-color: #ffffff !important; 
-        border: 1.5px solid #81c784 !important; 
-        border-radius: 12px !important; 
-    }
-
-    /* Boutons de validation */
-    .stButton>button { 
-        background-color: #4caf50 !important; 
-        color: white !important; 
-        border-radius: 15px; 
-        font-weight: bold; 
-        border: none; 
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* Grille Hebdomadaire (Rose/Blanc comme demandé) */
-    .hebdo-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background-color: #fce4ec; border: 2px solid #fce4ec; border-radius: 15px; overflow: hidden; }
-    .hebdo-header { background-color: #f06292; color: white !important; padding: 10px; text-align: center; font-weight: bold; }
-    .hebdo-cell { background-color: white; min-height: 150px; padding: 8px; color: #444 !important; font-size: 0.85rem; }
-    .event-tag { background: #fce4ec; border-left: 4px solid #f06292; padding: 4px; margin-bottom: 5px; border-radius: 4px; color: #880e4f !important; font-weight: 500; }
+    /* Inputs et Boutons */
+    input, textarea, [data-baseweb="select"] div { color: #1b5e20 !important; }
+    div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea { background-color: #ffffff !important; border: 1.5px solid #81c784 !important; border-radius: 12px !important; }
+    .stButton>button { background-color: #4caf50 !important; color: white !important; border-radius: 15px; font-weight: bold; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. INTERFACE
+# 3. LOGIQUE & PAGES
 # ==========================================
 try: user_name = ws_conf.acell('A2').value or "MeyLune"
 except: user_name = "MeyLune"
@@ -115,89 +76,99 @@ st.markdown(f'<div class="header-banner"><h1>Journal de {user_name}</h1></div>',
 
 page = st.radio("", ["📅 Année", "🌿 Semaine", "✍️ Mon Journal", "💰 Budget"], index=2, horizontal=True, label_visibility="collapsed")
 
-# Affichage date au centre
-st.markdown(f"<div style='text-align:center; font-family:\"Caveat\"; font-size:1.8rem; color:#388e3c; margin-bottom:20px;'>Nous sommes le {datetime.now().strftime('%d %B %Y')}</div>", unsafe_allow_html=True)
-
 # --- PAGE MON JOURNAL ---
 if page == "✍️ Mon Journal":
-    col_g, col_d = st.columns([1, 1], gap="large")
-
+    st.markdown(f"<p style='text-align:center; font-family:\"Caveat\"; font-size:1.8rem; color:#388e3c;'>Nous sommes le {datetime.now().strftime('%d %B %Y')}</p>", unsafe_allow_html=True)
+    
+    col_g, col_d = st.columns(2, gap="medium")
     with col_g:
-        st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
-        st.markdown("<h4>😊 Mon Humeur & État</h4>", unsafe_allow_html=True)
+        st.markdown('<div class="bujo-block"><h4>😊 Humeur & État</h4>', unsafe_allow_html=True)
         humeur = st.select_slider("", options=["😢", "😟", "😐", "🙂", "✨", "🔥"], value="😐")
+        st.text_area("Sentiments", placeholder="Comment vas-tu ?", label_visibility="collapsed", height=100)
+        st.markdown('<p style="font-family:\'Caveat\'; font-size:1.4rem; color:#e91e63;">"Chaque jour est une nouvelle chance."</p></div>', unsafe_allow_html=True)
         
-        st.markdown("<p style='margin-bottom:5px;'><b>Comment je me sens aujourd'hui ?</b></p>", unsafe_allow_html=True)
-        sentiments = st.text_area("Sentiments", placeholder="Ex: Je me sens motivée pour mon projet !", label_visibility="collapsed", height=150)
-        
-        st.markdown(f'<p style="font-family:\'Caveat\'; font-size:1.6rem; color:#e91e63; margin:15px 0;">"Je suis capable de réaliser mes rêves."</p>', unsafe_allow_html=True)
-        if st.button("✨ Enregistrer mon état"):
-            st.success("État d'esprit sauvegardé !")
-        st.markdown('</div>', unsafe_allow_html=True)
-
     with col_d:
-        st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
-        st.markdown("<h4>📋 Mon Programme</h4>", unsafe_allow_html=True)
-        programme = st.text_area("Planning", placeholder="08h00 : Yoga\n10h30 : Développement Bujo...", label_visibility="collapsed", height=325)
-        if st.button("💾 Mettre à jour le planning"):
-            st.success("Programme mis à jour !")
+        st.markdown('<div class="bujo-block"><h4>📋 Programme</h4>', unsafe_allow_html=True)
+        st.text_area("Planning", placeholder="08h00 : ...", label_visibility="collapsed", height=180)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.write("---")
-    
-    # Entrée Notes / RDV
     st.markdown("### 🖋️ Notes, RDV & Événements")
-    c1, c2 = st.columns([3, 1])
-    with c1: note_txt = st.text_input("Nouvelle pensée ou rendez-vous...", placeholder="Ex: Dentiste à 16h")
-    with c2: note_type = st.selectbox("Style", ["🍃 Note", "📌 Tâche", "📅 RDV / Événement", "💡 Idée"])
-    
-    if st.button("🚀 Ancrer dans mon Journal"):
-        if note_txt:
-            ws_notes.append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), note_type, note_txt])
-            st.rerun()
+    c1, c2, c3 = st.columns([3, 2, 1])
+    with c1: note_txt = st.text_input("Saisir une note...", placeholder="Ex: Dentiste 15h")
+    with c2: note_type = st.selectbox("Type", ["🍃 Note", "📌 Tâche", "📅 RDV / Événement", "💡 Idée"])
+    with c3:
+        st.write("") # Espacement
+        btn_add = st.button("Ancrer")
 
-    st.markdown("#### 📜 Historique récent")
-    rows = ws_notes.get_all_values()
-    if len(rows) > 1:
-        for n in reversed(rows[-5:]):
-            st.markdown(f"**{n[2]}** : {n[3]} <small style='color:#666;'>(le {n[0]} à {n[1]})</small>", unsafe_allow_html=True)
+    if btn_add and note_txt:
+        ws_notes.append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), note_type, note_txt])
+        st.rerun()
 
-# --- PAGE SEMAINE (PLANNING HEBDO) ---
+# --- PAGE SEMAINE (VISUEL MODÈLE ROSE) ---
 elif page == "🌿 Semaine":
     st.markdown("### 🗓️ Mon Planning Hebdomadaire")
     
+    # Calcul dates
     today = datetime.now()
     start_week = today - timedelta(days=today.weekday())
     
-    data = ws_notes.get_all_values()
-    df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame()
+    # Récupération données (avec gestion erreur de colonnes)
+    data = ws_notes.get_all_records()
+    df = pd.DataFrame(data)
 
-    st.markdown('<div class="hebdo-grid">', unsafe_allow_html=True)
+    st.markdown('<div class="planner-container">', unsafe_allow_html=True)
     cols = st.columns(7)
-    days_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    days_fr = ["LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI", "DIMANCHE"]
 
     for i in range(7):
         current_day = start_week + timedelta(days=i)
         date_str = current_day.strftime("%d/%m/%Y")
         
         with cols[i]:
-            st.markdown(f'<div class="hebdo-header">{days_fr[i]}<br>{current_day.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="planner-header">{days_fr[i]}<br>{current_day.strftime("%d/%m")}</div>', unsafe_allow_html=True)
             
             events_html = ""
-            if not df.empty:
-                day_events = df[(df['Date'] == date_str) & (df['Type'] == "📅 RDV / Événement")]
+            if not df.empty and 'Date' in df.columns and 'Type' in df.columns:
+                # Filtrage : On cherche les RDV pour ce jour précis
+                mask = (df['Date'] == date_str) & (df['Type'] == "📅 RDV / Événement")
+                day_events = df[mask]
                 for _, row in day_events.iterrows():
-                    events_html += f'<div class="event-tag">🕒 {row["Heure"]}<br>{row["Note"]}</div>'
+                    events_html += f'<div class="event-item"><b>{row["Heure"]}</b><br>{row["Note"]}</div>'
             
-            st.markdown(f'<div class="hebdo-cell">{events_html}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="planner-cell">{events_html}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PAGE BUDGET ---
+# --- PAGE BUDGET (RESTAURÉE) ---
 elif page == "💰 Budget":
-    st.markdown("### 🪙 Ma Gestion Budgétaire")
-    # (Le reste du code budget reste identique mais avec les styles appliqués ci-dessus)
-    st.info("Utilise le tableau ci-dessous pour gérer tes finances.")
+    st.markdown("### 🪙 Gestion Budgétaire")
+    
+    # Formulaire d'ajout
+    with st.expander("➕ Ajouter une opération", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1: b_cat = st.selectbox("Catégorie", ["Revenu", "Charge Fixe", "Dépense"])
+        with c2: b_lab = st.text_input("Libellé")
+        with c3: b_val = st.number_input("Montant €", min_value=0.0, step=1.0)
+        
+        if st.button("Ajouter à la liste"):
+            ws_fin.append_row([datetime.now().strftime("%B"), "2026", b_cat, b_lab, b_val])
+            st.success("Opération ajoutée !")
+            st.rerun()
+
+    # Historique et Calculs
     data_fin = ws_fin.get_all_records()
     if data_fin:
         df_fin = pd.DataFrame(data_fin)
-        st.data_editor(df_fin, num_rows="dynamic", use_container_width=True)
+        st.markdown("#### 📜 Historique (Modifier ou Supprimer)")
+        # Éditeur de données
+        edited_df = st.data_editor(df_fin, use_container_width=True, num_rows="dynamic")
+        
+        if st.button("Enregistrer les modifications"):
+            ws_fin.clear()
+            ws_fin.append_row(["Mois", "Année", "Catégorie", "Libellé", "Montant €"])
+            ws_fin.append_rows(edited_df.values.tolist())
+            st.success("Modifications enregistrées !")
+            st.rerun()
+
+# --- PAGE ANNÉE (À VENIR) ---
+elif page == "📅 Année":
+    st.info("Cette page est en cours de préparation. On y mettra bientôt ton calendrier annuel avec le même visuel !")
