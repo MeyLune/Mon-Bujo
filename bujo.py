@@ -21,7 +21,7 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. DESIGN GLOBAL (SANS BARRE NOIRE) ---
+# --- 2. DESIGN GLOBAL ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -30,8 +30,8 @@ st.markdown("""
     .stApp { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); }
     h1, h2, h3, p, label { color: #1b5e20 !important; font-family: 'Comfortaa', cursive; }
     
-    /* Correction Contrastes iPad */
-    div[data-baseweb="input"], .stTextArea textarea, .stTextInput input {
+    /* Correction Contrastes Champs */
+    div[data-baseweb="input"], .stTextArea textarea, .stTextInput input, div[data-baseweb="select"] {
         background-color: white !important;
         border: 2px solid #c8e6c9 !important;
         border-radius: 12px !important;
@@ -39,25 +39,23 @@ st.markdown("""
         -webkit-text-fill-color: #1b5e20 !important;
     }
 
-    /* Boutons avec texte blanc éclatant */
+    /* Boutons avec texte blanc forcé */
     .stButton>button { background-color: #1b5e20 !important; border-radius: 20px !important; border: none !important; padding: 10px 20px !important; }
-    .stButton>button p { color: white !important; font-weight: bold !important; font-size: 1rem !important; }
+    .stButton>button p { color: white !important; font-weight: bold !important; font-size: 1.1rem !important; }
 
-    /* Blocs Bujo */
-    .post-it {
-        background: #fff9c4; padding: 25px; border-left: 6px solid #fbc02d;
-        font-family: 'Indie Flower', cursive; font-size: 1.3rem; color: #5d4037 !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 4px;
-    }
+    /* Styles Bujo */
+    .post-it { background: #fff9c4; padding: 25px; border-left: 6px solid #fbc02d; font-family: 'Indie Flower', cursive; font-size: 1.3rem; color: #5d4037 !important; border-radius: 4px; margin-bottom: 15px; }
     .bujo-block { background: white; padding: 20px; border-radius: 20px; border: 1px solid #c8e6c9; margin-bottom: 20px; }
+    .p-header { background-color: #f06292; color: white !important; padding: 10px; text-align: center; border-radius: 10px 10px 0 0; font-weight: bold; }
+    .p-cell { background-color: white; min-height: 120px; padding: 10px; border: 1px solid #fce4ec; border-radius: 0 0 10px 10px; margin-bottom: 15px; }
+    .event-tag { background: #fff1f3; border-left: 4px solid #f06292; padding: 4px 8px; margin-bottom: 4px; border-radius: 4px; font-size: 0.85rem; color: #ad1457 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. GESTION DE LA SESSION ---
-if "user_data" not in st.session_state:
-    st.session_state.user_data = None
+# --- 3. SESSION & LOGIN ---
+if "user_data" not in st.session_state: st.session_state.user_data = None
 
-def login(code_entre):
+def login_procedure(code_entre):
     if sh:
         try:
             ws = sh.worksheet("Utilisateurs")
@@ -74,83 +72,116 @@ if not st.session_state.user_data:
     _, col_m, _ = st.columns([1, 1, 1])
     with col_m:
         st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
-        code = st.text_input("Code secret :", type="password")
-        if st.button("Valider"):
-            u = login(code)
-            if u: st.session_state.user_data = u; st.rerun()
-            else: st.error("Code incorrect.")
+        code_saisi = st.text_input("Code personnel :", type="password")
+        if st.button("Accéder au Journal"):
+            user = login_procedure(code_saisi)
+            if user:
+                st.session_state.user_data = user
+                st.rerun()
+            else: st.error("Code erroné")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 4. NAVIGATION ET CONTENU ---
+# --- 4. NAVIGATION ---
 user = st.session_state.user_data
-col_title, col_logout = st.columns([4, 1])
-with col_title:
-    st.markdown(f"<h1>Journal de {user['Nom']}</h1>", unsafe_allow_html=True)
-with col_logout:
+col_t, col_l = st.columns([4, 1])
+with col_t: st.markdown(f"<h1>Journal de {user['Nom']}</h1>", unsafe_allow_html=True)
+with col_l:
     if st.button("🔒 Déconnexion"):
         st.session_state.user_data = None; st.rerun()
 
-# Menu complet
-menu = ["✍️ JOURNAL", "📊 TRACKERS", "🗓️ SEMAINE", "🎨 STICKERS", "🛒 COURSES"]
+menu = ["✍️ JOURNAL", "🗓️ SEMAINE", "📊 TRACKERS", "🎨 STICKERS", "🛒 COURSES"]
 if user.get('Accès journal') == "OUI" or user.get('Accès Journal') == "OUI":
     menu.append("💰 BUDGET PRIVÉ")
 
 tabs = st.tabs(menu)
 
-# --- TAB : JOURNAL ---
+# --- ONGLET 1 : JOURNAL ---
 with tabs[0]:
     st.markdown(f"### ✨ {datetime.now().strftime('%d %B %Y')}")
-    st.markdown('<div class="post-it">Écris tes pensées ou tes gratitudes...</div>', unsafe_allow_html=True)
-    st.text_area("", height=250, key="journal_area", label_visibility="collapsed")
-    if st.button("Enregistrer ma page"):
-        st.success("C'est mémorisé ! ✨")
+    st.markdown('<div class="post-it">Comment te sens-tu aujourd\'hui ?</div>', unsafe_allow_html=True)
+    st.text_area("Ma pensée", height=200, label_visibility="collapsed", key="note_j")
+    if st.button("Ancrer au Journal"): st.success("C'est enregistré !")
 
-# --- TAB : TRACKERS ---
+# --- ONGLET 2 : SEMAINE ---
 with tabs[1]:
-    st.markdown("### 📊 Mes suivis quotidiens")
+    st.subheader("🗓️ Notre Vie Hebdomadaire")
+    if 'w_off' not in st.session_state: st.session_state.w_off = 0
+    c_n1, c_n2, c_n3 = st.columns([1, 2, 1])
+    if c_n1.button("⬅️ Précédente"): st.session_state.w_off -= 1
+    if c_n3.button("Suivante ➡️"): st.session_state.w_off += 1
+    
+    today = datetime.now().date()
+    start_week = (today - timedelta(days=today.weekday())) + timedelta(weeks=st.session_state.w_off)
+    c_n2.markdown(f"<p style='text-align:center;'>Semaine du {start_week.strftime('%d/%m')}</p>", unsafe_allow_html=True)
+
+    # Lecture Google Sheets
+    try:
+        ws_notes = sh.worksheet("Note")
+        df_notes = pd.DataFrame(ws_notes.get_all_values()[1:], columns=ws_notes.get_all_values()[0])
+    except: df_notes = pd.DataFrame(columns=["Date", "Heure", "Type", "Note"])
+
+    # Grille iPad
+    days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    for i in range(0, 7, 2):
+        cols = st.columns(2)
+        for j in range(2):
+            if (i+j) < 7:
+                curr_date = start_week + timedelta(days=i+j)
+                with cols[j]:
+                    st.markdown(f'<div class="p-header">{days[i+j]} {curr_date.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+                    evts = df_notes[df_notes.iloc[:, 0] == curr_date.strftime("%d/%m/%Y")]
+                    st.markdown('<div class="p-cell">', unsafe_allow_html=True)
+                    for _, r in evts.iterrows():
+                        st.markdown(f'<div class="event-tag"><b>{r.iloc[1]}</b> : {r.iloc[3]}</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+    # FORMULAIRE POUR TOUS (ADMIN ET INVITÉ)
+    with st.expander("➕ Ajouter un rendez-vous / Évènement"):
+        with st.form("new_evt"):
+            f_date = st.date_input("Date", value=today)
+            f_time = st.text_input("Heure")
+            f_type = st.selectbox("Catégorie", ["Rdv", "Famille", "Travail", "Loisir"])
+            f_note = st.text_input("Description")
+            if st.form_submit_button("Valider l'entrée"):
+                ws_notes.append_row([f_date.strftime("%d/%m/%Y"), f_time, f_type, f_note])
+                st.success("Ajouté !"); st.rerun()
+
+# --- ONGLET 3 : TRACKERS ---
+with tabs[2]:
+    st.markdown("### 📊 Mes Trackers")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown('<div class="bujo-block">💧 Hydratation (Verres)', unsafe_allow_html=True)
-        st.slider("", 0, 10, 0, key="h2o")
+        st.markdown('<div class="bujo-block">💧 Verres d\'eau', unsafe_allow_html=True)
+        st.slider("", 0, 12, 0, key="eau_slider")
         st.markdown('</div>', unsafe_allow_html=True)
     with c2:
-        st.markdown('<div class="bujo-block">🧘 Bien-être', unsafe_allow_html=True)
+        st.markdown('<div class="bujo-block">🌿 Bien-être', unsafe_allow_html=True)
         st.checkbox("Méditation")
         st.checkbox("Lecture")
-        st.checkbox("Sport / Marche")
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- TAB : SEMAINE ---
-with tabs[2]:
-    st.markdown("### 🗓️ Vue Hebdomadaire")
-    # Grille de la semaine
-    st.info("Ici s'affichera ta grille avec les rendez-vous de ton Google Sheets.")
-
-# --- TAB : STICKERS ---
+# --- ONGLET 4 : STICKERS ---
 with tabs[3]:
-    st.markdown("### 🎨 Ma Planche de Stickers Aquarelle")
-    st.write("Astuce iPad : Pour utiliser un sticker, reste appuyé dessus et fais 'Copier' ou 'Faire glisser'.")
-    
-    st.markdown("---")
-    col_cosy, col_org = st.columns(2)
-    
-    with col_cosy:
-        st.subheader("🌿 Pack Cosy & Douceur")
+    st.markdown("### 🎨 Ma Planche de Stickers")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.subheader("🌿 Pack Cosy")
         st.image("https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/stickers%202.jpg", use_container_width=True)
-        st.caption("Illustrations : Café, plantes et moments cocooning.")
-
-    with col_org:
-        st.subheader("📌 Pack Organisation")
+    with col_b:
+        st.subheader("📌 Organisation")
         st.image("https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/stickers%201.jpg", use_container_width=True)
-        st.caption("Pratique : Bannières, rappels et post-it à thèmes.")
 
-# --- TAB : COURSES ---
+# --- ONGLET 5 : COURSES ---
 with tabs[4]:
     st.markdown('<div class="bujo-block"><h3>🛒 Liste de Courses</h3></div>', unsafe_allow_html=True)
 
-# --- TAB : BUDGET PRIVÉ ---
-if len(tabs) > 5:
+# --- ONGLET 6 : BUDGET (SI ACCÈS) ---
+if "💰 BUDGET PRIVÉ" in menu:
     with tabs[5]:
-        st.markdown("### 🔒 Finances Détaillées")
-        st.write("Section accessible uniquement à MeyLune.")
+        st.markdown("### 🔒 Budget Personnel")
+        try:
+            ws_f = sh.worksheet("Finances")
+            df_f = pd.DataFrame(ws_f.get_all_records())
+            st.data_editor(df_f, use_container_width=True)
+        except: st.error("Feuille 'Finances' introuvable.")
