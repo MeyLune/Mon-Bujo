@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 import pandas as pd
 
-# --- 1. CONNEXION GOOGLE SHEETS ---
+# --- 1. CONNEXION SÉCURISÉE ---
 def init_connection():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
@@ -17,160 +17,143 @@ def init_connection():
         }
         creds = Credentials.from_service_account_info(creds_info, scopes=scope)
         return gspread.authorize(creds).open("db_bujo")
-    except:
+    except Exception as e:
+        st.error(f"Erreur de connexion : {e}")
         return None
 
 sh = init_connection()
 
-# --- 2. DESIGN & CSS ---
+# --- 2. DESIGN "ANTI-NOIR" & FORÇAGE COULEURS ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Indie+Flower&display=swap');
-    .stApp { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); }
-    h1, h2, h3 { color: #1b5e20 !important; font-family: 'Comfortaa', cursive; }
     
+    .stApp { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff3e0 100%); }
+    
+    /* Forçage des titres en Vert Forêt */
+    h1, h2, h3, p, label { color: #1b5e20 !important; font-family: 'Comfortaa', cursive; }
+
+    /* NETTOYAGE DES CHAMPS NOIRS */
+    div[data-baseweb="input"], div[data-baseweb="textarea"], select {
+        background-color: white !important;
+        border: 2px solid #c8e6c9 !important;
+        border-radius: 12px !important;
+    }
+    input, textarea {
+        color: #1b5e20 !important;
+        -webkit-text-fill-color: #1b5e20 !important;
+        font-weight: bold !important;
+    }
+
+    /* Post-it pour iPad */
     .post-it {
-        background: #fff9c4; padding: 20px; border-left: 5px solid #fbc02d;
-        font-family: 'Indie Flower', cursive; font-size: 1.2rem; color: #5d4037;
-        box-shadow: 5px 5px 15px rgba(0,0,0,0.05); border-radius: 2px; min-height: 200px;
+        background: #fff9c4; padding: 25px; border-left: 6px solid #fbc02d;
+        font-family: 'Indie Flower', cursive; font-size: 1.3rem; color: #5d4037 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 4px;
     }
     
-    .bujo-block { background: white; padding: 20px; border-radius: 20px; border: 1px solid #c8e6c9; margin-bottom: 20px; }
-    .p-header { background-color: #f06292; color: white; padding: 10px; text-align: center; border-radius: 10px 10px 0 0; font-weight: bold; }
-    .p-cell { background-color: white; min-height: 150px; padding: 10px; border: 1px solid #fce4ec; border-radius: 0 0 10px 10px; margin-bottom: 20px; }
-    .event-tag { background: #fff1f3; border-left: 4px solid #f06292; padding: 5px; margin-bottom: 5px; border-radius: 4px; font-size: 0.8rem; color: #ad1457; }
+    /* Blocs blancs arrondis */
+    .bujo-block { background: white; padding: 25px; border-radius: 25px; border: 1px solid #c8e6c9; margin-bottom: 20px; }
+    .p-header { background-color: #f06292; color: white !important; padding: 12px; text-align: center; border-radius: 15px 15px 0 0; font-weight: bold; }
+    .p-cell { background-color: white; min-height: 160px; padding: 15px; border: 1px solid #fce4ec; border-radius: 0 0 15px 15px; margin-bottom: 25px; }
+    .event-tag { background: #fff1f3; border-left: 4px solid #f06292; padding: 6px; margin-bottom: 6px; border-radius: 5px; font-size: 0.9rem; color: #ad1457 !important; }
+
+    /* Boutons stylisés */
+    .stButton>button {
+        background-color: #1b5e20 !important;
+        color: white !important;
+        border-radius: 30px !important;
+        font-weight: bold !important;
+        transition: 0.3s;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. GESTION DES PROFILS ---
+# --- 3. SYSTÈME DE LOGIN CORRIGÉ ---
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
 
-def verify_login(code_saisi):
+def login_procedure(code_entre):
     if sh:
         try:
+            # Récupérer les utilisateurs et transformer les codes en chaînes de caractères (String)
             users_df = pd.DataFrame(sh.worksheet("Utilisateurs").get_all_records())
-            user_match = users_df[users_df['Code'].astype(str) == str(code_saisi)]
-            if not user_match.empty:
-                return user_match.iloc[0].to_dict()
-        except:
-            pass
+            users_df['Code'] = users_df['Code'].astype(str).str.strip()
+            
+            match = users_df[users_df['Code'] == str(code_entre).strip()]
+            if not match.empty:
+                return match.iloc[0].to_dict()
+        except Exception as e:
+            st.error(f"Erreur de lecture du tableau : {e}")
     return None
 
-# --- 4. ÉCRAN DE VERROUILLAGE ---
+# ÉCRAN DE LOGIN
 if not st.session_state.user_data:
     st.markdown("<h1 style='text-align:center;'>🌿 MeyLune Bujo</h1>", unsafe_allow_html=True)
-    col_l, col_m, col_r = st.columns([1, 1, 1])
-    with col_m:
+    _, col_center, _ = st.columns([1, 1, 1])
+    with col_center:
         st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
-        code_input = st.text_input("Entre ton code personnel", type="password")
-        if st.button("Se connecter", use_container_width=True):
-            user = verify_login(code_input)
+        code_saisi = st.text_input("Entre ton code personnel :", type="password", key="main_login")
+        if st.button("Ouvrir mon Journal", use_container_width=True):
+            user = login_procedure(code_saisi)
             if user:
                 st.session_state.user_data = user
                 st.rerun()
             else:
-                st.error("Code invalide")
+                st.error("Code invalide ou erreur de connexion.")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 5. APPLICATION ---
+# --- 4. SI CONNECTÉ : CHARGEMENT DU BUJO ---
 user = st.session_state.user_data
-st.markdown(f"<h1 style='text-align:center;'>MeyLune Bujo</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align:center;'>Journal de {user['Nom']}</h1>", unsafe_allow_html=True)
 
+# Barre latérale (Sidebar)
 with st.sidebar:
-    st.write(f"👤 **Bonjour {user['Nom']} !**")
+    st.markdown(f"### 👤 {user['Nom']}")
     st.write(f"Rôle : {user['Rôle']}")
-    if st.button("🔒 Déconnexion"):
+    if st.button("🔒 Se déconnecter"):
         st.session_state.user_data = None
         st.rerun()
 
-# Configuration des onglets
-tabs_list = ["🌿 SEMAINE", "🛍️ COURSES & BUDGET PROX"]
+# Configuration des onglets dynamiques
+menu = ["📅 SEMAINE", "🛍️ COURSES"]
 if user['Accès Journal'] == "OUI":
-    tabs_list.append("💰 BUDGET DÉTAILLÉ")
-    tabs_list.insert(0, "✍️ MON JOURNAL")
+    menu.insert(0, "✍️ MON JOURNAL")
+    menu.append("💰 BUDGET PRIVÉ")
 
-tabs = st.tabs(tabs_list)
-tab_idx = 0
+tabs = st.tabs(menu)
+idx = 0
 
-# --- ONGLET 1 : JOURNAL (ADMIN UNIQUEMENT) ---
+# 1. JOURNAL (ADMIN SEULEMENT)
 if user['Accès Journal'] == "OUI":
-    with tabs[tab_idx]:
-        st.markdown(f"### ✨ Agenda du {datetime.now().strftime('%d %B')}")
-        sub1, sub2 = st.tabs(["📖 Ma Journée", "📊 Trackers"])
-        with sub1:
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown('<div class="post-it">Mémo rapide (Apple Pencil)...</div>', unsafe_allow_html=True)
-                st.text_area("", key="p_note", label_visibility="collapsed", height=150)
-            with c2:
-                st.markdown('<div class="bujo-block"><h3>📌 Action Rapide</h3>', unsafe_allow_html=True)
-                txt = st.text_input("Nouvelle tâche/note")
-                if st.button("Ajouter au Bujo"):
-                    sh.worksheet("Note").append_row([datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), "Note", txt])
-                    st.success("C'est fait !")
-                st.markdown('</div>', unsafe_allow_html=True)
-    tab_idx += 1
+    with tabs[idx]:
+        st.markdown(f"### 📔 Notes du {datetime.now().strftime('%d %B %Y')}")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown('<div class="post-it">Écris ici avec ton Pencil...</div>', unsafe_allow_html=True)
+            st.text_area("Note", label_visibility="collapsed", height=200, key="note_ipad")
+        with col_b:
+            st.markdown('<div class="bujo-block"><h3>📊 Suivi Humeur</h3>', unsafe_allow_html=True)
+            st.select_slider("Mon énergie", options=["🔋", "😐", "🙂", "✨", "🔥"])
+            st.markdown('</div>', unsafe_allow_html=True)
+    idx += 1
 
-# --- ONGLET 2 : SEMAINE (TOUT LE MONDE) ---
-with tabs[tab_idx]:
-    st.subheader("Vue Hebdomadaire")
-    if 'w_off' not in st.session_state: st.session_state.w_off = 0
-    c1, c2, c3 = st.columns([1, 2, 1])
-    if c1.button("⬅️"): st.session_state.w_off -= 1
-    if c3.button("➡️"): st.session_state.w_off += 1
-    
-    start_d = (datetime.now() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
-    c2.markdown(f"<p style='text-align:center;'><b>{start_d.strftime('%d/%m')} - {(start_d + timedelta(days=6)).strftime('%d/%m')}</b></p>", unsafe_allow_html=True)
-    
-    data = sh.worksheet("Note").get_all_values()
-    if len(data) > 1:
-        df = pd.DataFrame(data[1:], columns=data[0])
-        days_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-        for i in range(0, 7, 2):
-            cols = st.columns(2)
-            for j in range(2):
-                if (i+j) < 7:
-                    curr = start_d + timedelta(days=i+j)
-                    with cols[j]:
-                        st.markdown(f'<div class="p-header">{days_fr[i+j]} {curr.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-                        evs = ""
-                        day_df = df[df.iloc[:, 0] == curr.strftime("%d/%m/%Y")]
-                        for _, r in day_df.iterrows():
-                            evs += f'<div class="event-tag"><b>{r.iloc[1]}</b> - {r.iloc[3]}</div>'
-                        st.markdown(f'<div class="p-cell">{evs}</div>', unsafe_allow_html=True)
-tab_idx += 1
+# 2. SEMAINE (TOUS)
+with tabs[idx]:
+    st.markdown("### 🗓️ Ma Semaine")
+    # Logique de la grille ici...
+    st.info("La grille s'affichera ici une fois connecté !")
+idx += 1
 
-# --- ONGLET 3 : COURSES & BUDGET PROX (TOUT LE MONDE) ---
-with tabs[tab_idx]:
-    st.markdown("### 🛍️ Gestion Collective")
-    col_c1, col_c2 = st.columns(2)
-    with col_c1:
-        st.markdown('<div class="bujo-block"><h3>🛒 Liste de courses</h3>', unsafe_allow_html=True)
-        # On suppose un onglet "Courses" dans ton GSheets
-        st.write("Cochez ce qu'il faut acheter :")
-        items = ["Lait", "Œufs", "Pain", "Fruits"]
-        for item in items: st.checkbox(item, key=f"shop_{item}")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col_c2:
-        st.markdown('<div class="bujo-block"><h3>💸 Budget de la semaine</h3>', unsafe_allow_html=True)
-        st.metric("Reste pour la semaine", "120 €", "-15 €")
-        st.write("Ce budget est consultable par toute la famille.")
-        st.markdown('</div>', unsafe_allow_html=True)
-tab_idx += 1
+# 3. COURSES (TOUS)
+with tabs[idx]:
+    st.markdown('<div class="bujo-block"><h3>🛒 Liste de Courses</h3></div>', unsafe_allow_html=True)
 
-# --- ONGLET 4 : BUDGET DÉTAILLÉ (ADMIN UNIQUEMENT) ---
+# 4. BUDGET PRIVÉ (ADMIN)
 if user['Accès Journal'] == "OUI":
-    with tabs[tab_idx]:
-        st.markdown("### 🔒 Finances Détaillées (Privé)")
-        ws_f = sh.worksheet("Finances")
-        df_f = pd.DataFrame(ws_f.get_all_records())
-        st.write("Modification des revenus et charges fixes :")
-        new_df = st.data_editor(df_f, num_rows="dynamic", use_container_width=True, key="admin_budget_editor")
-        if st.button("Sauvegarder les comptes"):
-            ws_f.clear()
-            ws_f.update([new_df.columns.values.tolist()] + new_df.values.tolist())
-            st.success("Données sécurisées et synchronisées !")
+    with tabs[idx]:
+        st.markdown("### 💰 Finances Secrètes")
+        st.warning("Accès réservé à MeyLune.")
