@@ -38,7 +38,7 @@ def get_circled_num(n):
     circled.update({21: "㉑", 22: "㉒", 23: "㉓", 24: "㉔", 25: "㉕", 26: "㉖", 27: "㉗", 28: "㉘", 29: "㉙", 30: "㉚", 31: "㉛"})
     return circled.get(n, str(n))
 
-# --- 2. STYLE IPAD OPTIMISÉ (ANTI-FOND NOIR) ---
+# --- 2. DESIGN IPAD FORCE (DÉGRADÉ + ANTI-NOIR) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -48,51 +48,52 @@ st.markdown("""
     
     .stApp { 
         background: linear-gradient(180deg, #fce4ec 0%, #e0f2f1 100%) !important;
-        background-attachment: fixed;
+        background-attachment: fixed !important;
     }
 
-    /* Correction iPad : Force le fond blanc et texte noir dans TOUS les inputs et menus */
-    div[data-baseweb="select"], div[data-baseweb="popover"], div[data-baseweb="input"], input, select, .stSelectbox {
+    /* Force le blanc sur iPad */
+    div[data-baseweb="select"], div[data-baseweb="input"], input, textarea, select, .stSelectbox {
         background-color: white !important;
         color: black !important;
-    }
-    
-    div[role="listbox"] ul li {
-        color: black !important;
-        background-color: white !important;
+        border: 2px solid var(--rose) !important;
     }
 
-    .titre-calli { font-family: 'Dancing Script'; font-size: 3.5rem; color: var(--sapin); text-align: center; margin-bottom: 20px;}
+    .titre-calli { font-family: 'Dancing Script'; font-size: 3.5rem; color: var(--sapin); text-align: center; }
     .sous-titre-calli { font-family: 'Dancing Script'; font-size: 2.2rem; color: var(--sapin); }
     
-    .mission-day-box {
+    .mission-box {
         background: white; border: 2px solid var(--rose); border-radius: 12px;
-        padding: 10px; margin-bottom: 10px; min-height: 120px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        padding: 10px; margin-bottom: 10px; min-height: 130px;
     }
-    .sticker-info { background: var(--vert); color: var(--sapin); padding: 5px; border-radius: 8px; margin-top: 5px; font-size: 0.85rem; border: 1px solid var(--rose); text-align: center; }
+    .post-it { 
+        background: #fffde7; border-left: 10px solid var(--or); padding: 15px; border-radius: 5px; color: black;
+    }
 </style>
 """, unsafe_allow_html=True)
-
-if 'shopping' not in st.session_state: st.session_state.shopping = []
 
 st.markdown('<div class="titre-calli">🌸 Mon Univers Quotidien</div>', unsafe_allow_html=True)
 tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES"])
 
-# --- ✍️ JOURNAL (Stable) ---
+# --- ✍️ JOURNAL & GRATITUDE ---
 with tabs[0]:
     c1, c2 = st.columns(2)
-    j_data, g_data = load_gs("Journal"), load_gs("Gratitude")
+    j_data = load_gs("Journal")
+    g_data = load_gs("Gratitude")
     with c1:
-        st.markdown('<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
-        t_j = st.text_area("...", height=150, key="j_in", label_visibility="collapsed")
-        if st.button("💾 Enregistrer pensée"):
+        st.markdown('<div class="sous-titre-calli">🖋️ Pensées</div>', unsafe_allow_html=True)
+        t_j = st.text_area("Ma pensée...", key="j_in", height=100, label_visibility="collapsed")
+        if st.button("💾 Sauver"):
             if t_j: save_gs("Journal", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_j]); st.rerun()
         for i, e in enumerate(reversed(j_data)):
-            idx = len(j_data)-1-i
             st.markdown(f'<div style="background:white; padding:10px; border-left:5px solid var(--rose); margin-bottom:5px; border-radius:10px;">{e.get("Texte")}</div>', unsafe_allow_html=True)
-            if st.button("🗑️", key=f"dj_{idx}"): delete_gs("Journal", idx); st.rerun()
+            if st.button("🗑️", key=f"dj_{i}"): delete_gs("Journal", len(j_data)-1-i); st.rerun()
+    with c2:
+        st.markdown('<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
+        t_g = st.text_area("Merci pour...", key="g_in", height=100, label_visibility="collapsed")
+        if st.button("🙏 Sauver"):
+            if t_g: save_gs("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_g]); st.rerun()
 
-# --- 🗓️ SEMAINE (Nettoyée) ---
+# --- 🗓️ SEMAINE ---
 with tabs[1]:
     start = datetime.now().date() - timedelta(days=datetime.now().weekday())
     s_data = load_gs("Semaine")
@@ -101,8 +102,8 @@ with tabs[1]:
     for i, j in enumerate(jours):
         curr_d = (start + timedelta(days=i)).strftime("%d/%m/%Y")
         with cols[i]:
-            st.markdown(f'<div style="background:var(--vert); text-align:center; border-radius:10px; font-weight:bold; padding:5px; margin-bottom:5px;">{j} {curr_d[:5]}</div>', unsafe_allow_html=True)
-            p_in = st.text_area("Planning", key=f"p_{i}", height=100, label_visibility="collapsed")
+            st.markdown(f'<div style="background:var(--vert); text-align:center; font-weight:bold; border-radius:10px; padding:5px;">{j}</div>', unsafe_allow_html=True)
+            p_in = st.text_area("Note", key=f"p_{i}", height=100, label_visibility="collapsed")
             m_in = st.text_input("🍴 Menu", key=f"m_{i}", label_visibility="collapsed")
             if st.button("💾", key=f"s_{i}"):
                 save_gs("Semaine", [curr_d, p_in, m_in]); st.rerun()
@@ -110,18 +111,17 @@ with tabs[1]:
                 if str(row.get("Date")) == curr_d:
                     st.markdown(f"<small>• {row.get('Planning')}<br>🍴 {row.get('Menu')}</small>", unsafe_allow_html=True)
 
-# --- 📅 ANNEE (Formulaire en bas + Supprimer) ---
+# --- 📅 ANNEE ---
 with tabs[2]:
     st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier 2026</div>', unsafe_allow_html=True)
     evs = load_gs("Evenements")
     marked = {f"{datetime.strptime(str(e['Date']), '%d/%m/%Y').month}-{datetime.strptime(str(e['Date']), '%d/%m/%Y').day}": e['Evenement'] for e in evs if e.get('Date')}
-    
     for r in range(4):
         cols = st.columns(3)
         for c in range(3):
             m_idx = r * 3 + c + 1
             with cols[c]:
-                st.markdown(f'<div style="background:var(--rose); color:white; text-align:center; border-radius:10px 10px 0 0; padding:2px;">{calendar.month_name[m_idx].upper()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background:var(--rose); color:white; text-align:center; border-radius:10px 10px 0 0;">{calendar.month_name[m_idx].upper()}</div>', unsafe_allow_html=True)
                 cal = calendar.monthcalendar(2026, m_idx)
                 res = "Lu Ma Me Je Ve Sa Di\n"
                 for w in cal:
@@ -131,82 +131,74 @@ with tabs[2]:
                         else: line += f"{get_circled_num(d)} " if f"{m_idx}-{d}" in marked else f"{d:2} "
                     res += line + "\n"
                 st.markdown(f'<div style="font-family:monospace; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 10px 10px; white-space:pre; text-align:center;">{res}</div>', unsafe_allow_html=True)
-
     st.markdown("---")
-    st.markdown('<div class="sous-titre-calli">📍 Gérer les événements</div>', unsafe_allow_html=True)
+    st.markdown("### 📍 Ajouter / Gérer Événements")
     ce1, ce2 = st.columns(2)
-    dev = ce1.date_input("Choisir une date", key="new_ev_date")
-    nev = ce2.text_input("Nom de l'événement", key="new_ev_name")
-    if st.button("➕ Ajouter au calendrier"):
-        save_gs("Evenements", [dev.strftime("%d/%m/%Y"), nev]); st.rerun()
-    
+    dev = ce1.date_input("Date")
+    nev = ce2.text_input("Nom")
+    if st.button("Marquer"): save_gs("Evenements", [dev.strftime("%d/%m/%Y"), nev]); st.rerun()
     for i, e in enumerate(evs):
-        col_a, col_b = st.columns([5, 1])
+        col_a, col_b = st.columns([5,1])
         col_a.write(f"📅 {e.get('Date')} : {e.get('Evenement')}")
         if col_b.button("🗑️", key=f"dev_{i}"): delete_gs("Evenements", i); st.rerun()
 
-# --- 📊 TRACKERS (Bibliothèque Restaurée + Missions Séparées) ---
+# --- 📊 TRACKERS (LECTURE + MISSIONS) ---
 with tabs[3]:
     tr_tabs = st.tabs(["📚 BIBLIOTHÈQUE", "🩺 BIEN-ÊTRE", "🏠 MISSIONS TRIBU"])
-    
-    with tr_tabs[0]: # Lecture complète
+    with tr_tabs[0]:
         st.markdown('<div class="sous-titre-calli">Ma Fiche de Lecture</div>', unsafe_allow_html=True)
         cl1, cl2 = st.columns(2)
-        titre = cl1.text_input("Titre", key="bk_t")
-        auteur = cl1.text_input("Auteur", key="bk_a")
-        date_l = cl1.date_input("Date de lecture", key="bk_d")
+        titre = cl1.text_input("Titre", key="l_t")
+        auteur = cl1.text_input("Auteur", key="l_a")
         note = cl2.slider("Note / 10", 0, 10, 5)
-        avis = st.text_area("Résumé & Avis", key="bk_av")
-        if st.button("💾 Enregistrer le livre"):
-            save_gs("Lectures", [date_l.strftime("%d/%m/%Y"), titre, auteur, note, avis]); st.rerun()
-        if st.checkbox("📖 Voir l'historique"):
+        avis = st.text_area("Mon Avis", key="l_av")
+        if st.button("💾 Enregistrer"):
+            save_gs("Lectures", [datetime.now().strftime("%d/%m/%Y"), titre, auteur, note, avis]); st.rerun()
+        if st.checkbox("📖 Voir historique bibliothèque"):
             for b in reversed(load_gs("Lectures")):
                 st.write(f"**{b.get('Titre')}** - {b.get('Auteur')} ({b.get('Note')}/10)")
 
-    with tr_tabs[2]: # Missions séparées en deux lignes
+    with tr_tabs[2]:
         st.markdown('<div class="sous-titre-calli">Missions de la Tribu</div>', unsafe_allow_html=True)
         cm1, cm2, cm3 = st.columns(3)
-        qui = cm1.selectbox("Qui ?", ["Enfant 1 👦", "Enfant 2 👧", "Enfant 3 👶", "Maman 🌸", "Papa 👔"])
-        d_m = cm2.date_input("Date", key="mission_date")
-        t_m = cm3.selectbox("Mission ?", ["🍽️ Vaisselle", "🗑️ Poubelles", "🧹 Balai", "🔌 Aspirateur", "🧼 Serpillière", "✨ Poussière", "🥣 Débarrasser", "🚿 Salle de bain", "🚽 Toilettes", "🧸 Chambres"])
+        qui = cm1.selectbox("Qui ?", ["Enfant 1 👦", "Enfant 2 👧", "Enfant 3 👶", "Maman 🌸", "Papa 👔"], key="t_q")
+        dm = cm2.date_input("Date", key="t_d")
+        tm = cm3.selectbox("Mission ?", ["🍽️ Vaisselle", "🗑️ Poubelles", "🧹 Balai", "🔌 Aspirateur", "🧼 Serpillière", "✨ Poussière", "🥣 Débarrasser", "🚿 Salle de bain", "🧸 Chambres"], key="t_m")
         if st.button("🚀 Valider mission"):
-            save_gs("Menage", [t_m, d_m.strftime("%d/%m/%Y"), qui]); st.rerun()
+            save_gs("Menage", [tm, dm.strftime("%d/%m/%Y"), qui]); st.rerun()
         
         m_data = load_gs("Menage")
-        start_w = datetime.now().date() - timedelta(days=datetime.now().weekday())
-        
-        # Ligne 1 : Lun à Jeu
         st.write("---")
-        c_row1 = st.columns(4)
+        # Affichage en 2 lignes pour iPad
+        jours_m = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+        r1 = st.columns(4)
         for i in range(4):
-            d_s = (start_w + timedelta(days=i)).strftime("%d/%m/%Y")
-            with c_row1[i]:
-                st.markdown(f'<div class="mission-day-box"><center><b>{jours[i]}</b><br><small>{d_s[:5]}</small></center>', unsafe_allow_html=True)
+            ds = (start + timedelta(days=i)).strftime("%d/%m/%Y")
+            with r1[i]:
+                st.markdown(f'<div class="mission-box"><center><b>{jours_m[i]}</b><br><small>{ds[:5]}</small></center>', unsafe_allow_html=True)
                 for m in m_data:
-                    if m.get('Lundi') == d_s:
-                        st.markdown(f'<div class="sticker-info"><b>{m.get("Tache")}</b><br>{m.get("Mardi")}</div>', unsafe_allow_html=True)
+                    if m.get('Lundi') == ds:
+                        st.markdown(f'<div style="background:var(--vert); font-size:0.8rem; border-radius:5px; padding:2px; margin-top:2px; text-align:center;">{m.get("Tache")}<br><b>{m.get("Mardi")}</b></div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Ligne 2 : Ven à Dim
-        c_row2 = st.columns(3)
+        r2 = st.columns(3)
         for i in range(4, 7):
-            d_s = (start_w + timedelta(days=i)).strftime("%d/%m/%Y")
-            with c_row2[i-4]:
-                st.markdown(f'<div class="mission-day-box"><center><b>{jours[i]}</b><br><small>{d_s[:5]}</small></center>', unsafe_allow_html=True)
+            ds = (start + timedelta(days=i)).strftime("%d/%m/%Y")
+            with r2[i-4]:
+                st.markdown(f'<div class="mission-box"><center><b>{jours_m[i]}</b><br><small>{ds[:5]}</small></center>', unsafe_allow_html=True)
                 for m in m_data:
-                    if m.get('Lundi') == d_s:
-                        st.markdown(f'<div class="sticker-info"><b>{m.get("Tache")}</b><br>{m.get("Mardi")}</div>', unsafe_allow_html=True)
+                    if m.get('Lundi') == ds:
+                        st.markdown(f'<div style="background:var(--vert); font-size:0.8rem; border-radius:5px; padding:2px; margin-top:2px; text-align:center;">{m.get("Tache")}<br><b>{m.get("Mardi")}</b></div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 🛒 COURSES (Stable) ---
+# --- 🛒 COURSES ---
 with tabs[4]:
     st.markdown('<div class="sous-titre-calli">🛒 Liste de Courses</div>', unsafe_allow_html=True)
-    c_l, c_r = st.columns(2)
-    with c_l:
+    cl, cr = st.columns(2)
+    with cl:
         for f in ["🍞 Pain", "🥛 Lait", "🍎 Fruits", "🍚 Riz", "🥣 Céréales"]:
             if st.button(f"+ {f}"): st.session_state.shopping.append(f); st.rerun()
-    with c_r:
-        st.markdown('<div style="background:#fffde7; padding:20px; border-radius:5px; border-left:10px solid var(--or); color:black;"><b>MA LISTE :</b>', unsafe_allow_html=True)
-        for i, item in enumerate(st.session_state.shopping):
-            st.write(f"☐ {item}")
+    with cr:
+        st.markdown('<div class="post-it"><b>📝 À ACHETER :</b><br>', unsafe_allow_html=True)
+        for it in st.session_state.shopping:
+            st.write(f"☐ {it}")
         st.markdown('</div>', unsafe_allow_html=True)
