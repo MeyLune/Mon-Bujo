@@ -21,7 +21,6 @@ def init_connection():
 
 sh = init_connection()
 
-# Fonctions de gestion
 def save_gs(ws_n, row):
     try: sh.worksheet(ws_n).append_row(row)
     except: pass
@@ -39,12 +38,12 @@ def get_circled_num(n):
     circled.update({21: "㉑", 22: "㉒", 23: "㉓", 24: "㉔", 25: "㉕", 26: "㉖", 27: "㉗", 28: "㉘", 29: "㉙", 30: "㉚", 31: "㉛"})
     return circled.get(n, str(n))
 
-# --- 2. STYLE & DESIGN PEAUFINÉ (Polices & Couleurs) ---
+# --- 2. DESIGN & CALLIGRAPHIE TOTALE ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide")
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Comfortaa:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&display=swap');
     
     :root { 
         --rose: #F48FB1; --sapin: #1B3022; --peche: #FFAB91; 
@@ -53,30 +52,62 @@ st.markdown("""
 
     .stApp { background: linear-gradient(180deg, var(--peche) 0%, #FCE4EC 40%, #FFFFFF 100%) !important; }
 
-    /* ONGLETS CENTRÉS & CALLIGRAPHIE */
-    .stTabs [data-baseweb="tab-list"] { display: flex; justify-content: center !important; gap: 25px; background-color: transparent !important; }
-    .stTabs button {
-        font-family: 'Great Vibes', cursive !important;
-        font-size: 1.9rem !important;
+    /* FORCE LA CALLIGRAPHIE PARTOUT */
+    html, body, [class*="st-"] {
+        font-family: 'Dancing Script', cursive !important;
         color: var(--sapin) !important;
-        background: rgba(255,255,255,0.4) !important;
-        border-radius: 12px 12px 0 0 !important;
-        border: none !important;
     }
 
-    /* TITRES & LABELS */
-    .titre-calli { font-family: 'Dancing Script' !important; font-size: 3.8rem; color: var(--sapin); text-align: center; }
-    .sous-titre-calli, label, .stMarkdown h3 { font-family: 'Dancing Script' !important; font-size: 2.2rem; color: var(--sapin) !important; }
-    * { font-family: 'Comfortaa', sans-serif !important; color: #1B3022 !important; }
+    /* ANTI-NOIR IPAD & SAFARI */
+    input, textarea, [data-baseweb="input"], [data-baseweb="select"] > div, .stNumberInput input, .stDateInput input {
+        background-color: white !important;
+        color: var(--sapin) !important;
+        -webkit-text-fill-color: var(--sapin) !important;
+        border: 2px solid var(--rose) !important;
+        border-radius: 15px !important;
+        font-family: 'Dancing Script' !important;
+        font-size: 1.3rem !important;
+    }
 
-    /* POST-ITS & CARTES */
-    .post-it { background: white; border-radius: 12px; padding: 15px; margin-bottom: 5px; border-left: 8px solid var(--rose); box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
-    .postit-planning { background: var(--postit-jaune); padding: 10px; border-radius: 4px; border-bottom-right-radius: 18px; box-shadow: 2px 2px 5px rgba(0,0,0,0.08); margin-top: 5px; border-left: 3px solid #FBC02D; font-size: 0.85rem; }
-    .postit-menu { background: var(--postit-vert); padding: 6px; border-radius: 5px; margin-top: 4px; border-left: 3px solid #80CBC4; font-size: 0.85rem; font-weight: bold; }
-    .postit-course { background: #E1F5FE; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #03A9F4; }
+    /* ONGLETS CENTRÉS HAUT DE GAMME */
+    .stTabs [data-baseweb="tab-list"] { 
+        display: flex; justify-content: center !important; 
+        gap: 35px; margin-bottom: 50px !important; 
+    }
+    .stTabs button {
+        font-family: 'Great Vibes', cursive !important;
+        font-size: 2.2rem !important;
+        color: var(--sapin) !important;
+        background: rgba(255,255,255,0.2) !important;
+        border: none !important;
+    }
+    .stTabs button[aria-selected="true"] { color: var(--rose) !important; border-bottom: 3px solid var(--rose) !important; }
 
-    /* CALENDRIER VERT */
-    .cal-header-vert { background: var(--vert-doux) !important; color: var(--sapin) !important; text-align: center; border-radius: 10px 10px 0 0; padding: 5px; font-weight: bold; font-family: 'Comfortaa' !important; }
+    /* TITRES & POST-ITS */
+    .titre-calli { font-family: 'Great Vibes' !important; font-size: 4.5rem; color: var(--sapin); text-align: center; margin-bottom: 30px; }
+    .sous-titre-calli { font-size: 2.8rem; margin-top: 20px; }
+    
+    .post-it { 
+        background: white; border-radius: 15px; padding: 20px; margin-bottom: 12px; 
+        border-left: 10px solid var(--rose); box-shadow: 3px 3px 10px rgba(0,0,0,0.05);
+        font-size: 1.4rem;
+    }
+    .postit-planning { 
+        background: var(--postit-jaune); padding: 12px; border-radius: 5px; 
+        border-bottom-right-radius: 25px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); 
+        border-left: 5px solid #FBC02D; font-size: 1.2rem; margin-top: 10px;
+    }
+    .postit-menu { 
+        background: var(--postit-vert); padding: 10px; border-radius: 8px; 
+        border-left: 5px solid #80CBC4; font-weight: bold; font-size: 1.2rem;
+    }
+
+    /* CALENDRIER ANNUEL VERT DOUX */
+    .cal-header-vert { 
+        background: var(--vert-doux) !important; color: var(--sapin) !important; 
+        text-align: center; border-radius: 12px 12px 0 0; padding: 10px; 
+        font-weight: bold; font-size: 1.3rem; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,53 +116,53 @@ if 'shopping' not in st.session_state: st.session_state.shopping = []
 st.markdown('<div class="titre-calli">🌸 Mon Univers Quotidien</div>', unsafe_allow_html=True)
 tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES"])
 
-# --- TAB 1: JOURNAL & GRATITUDE (Avec Boutons Modif/Suppr) ---
+# --- TAB 1: JOURNAL ---
 with tabs[0]:
     c1, c2 = st.columns(2)
     j_data, g_data = load_gs("Journal"), load_gs("Gratitude")
     with c1:
         st.markdown('<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
-        t_j = st.text_area("Libère ton esprit...", height=100, key="j_in", label_visibility="collapsed")
+        t_j = st.text_area("Ecris ici...", height=120, key="j_in", label_visibility="collapsed")
         if st.button("💾 Sauver pensée", key="btn_j"):
             if t_j: save_gs("Journal", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_j]); st.rerun()
         for i, e in enumerate(reversed(j_data[-5:])):
             idx = len(j_data)-1-i
             st.markdown(f'<div class="post-it">{e.get("Texte", "")}</div>', unsafe_allow_html=True)
             bj1, bj2, _ = st.columns([1, 1, 5])
-            if bj1.button("✏️", key=f"ej_{idx}"): pass 
+            bj1.button("✏️", key=f"ej_{idx}")
             if bj2.button("🗑️", key=f"dj_{idx}"): delete_gs("Journal", idx); st.rerun()
     with c2:
         st.markdown('<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
-        t_g = st.text_area("Petit bonheur...", height=100, key="g_in", label_visibility="collapsed")
+        t_g = st.text_area("Petit bonheur...", height=120, key="g_in", label_visibility="collapsed")
         if st.button("🙏 Sauver gratitude", key="btn_g"):
             if t_g: save_gs("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_g]); st.rerun()
         for i, e in enumerate(reversed(g_data[-5:])):
             idx_g = len(g_data)-1-i
             st.markdown(f'<div class="post-it" style="border-left-color: #D4AF37; background: #FFFDE7;"><i>{e.get("Texte", "")}</i></div>', unsafe_allow_html=True)
             bg1, bg2, _ = st.columns([1, 1, 5])
-            if bg1.button("✏️", key=f"eg_{idx_g}"): pass
+            bg1.button("✏️", key=f"eg_{idx_g}")
             if bg2.button("🗑️", key=f"dg_{idx_g}"): delete_gs("Gratitude", idx_g); st.rerun()
 
-# --- TAB 2: SEMAINE (Post-its & Aéré) ---
+# --- TAB 2: SEMAINE (Design Calligraphié & Aéré) ---
 with tabs[1]:
     start = datetime.now().date() - timedelta(days=datetime.now().weekday())
-    st.markdown(f'<div style="text-align:center; font-family:\'Dancing Script\'; font-size:2.2rem; padding:15px;">Semaine du {start.strftime("%d/%m")} au {(start + timedelta(days=6)).strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center; font-family:\'Great Vibes\'; font-size:3rem; padding:25px;">Semaine du {start.strftime("%d/%m")} au {(start + timedelta(days=6)).strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     s_data = load_gs("Semaine")
     cols = st.columns(7)
     for i, j in enumerate(jours):
         d_str = (start + timedelta(days=i)).strftime("%d/%m/%Y")
         with cols[i]:
-            st.markdown(f'<div style="text-align:center; font-weight:bold; font-family:\'Dancing Script\'; font-size:1.5rem;">{j}</div>', unsafe_allow_html=True)
-            p_in = st.text_area("Note", key=f"p_{i}", height=100, label_visibility="collapsed", placeholder="Planning...")
+            st.markdown(f'<div style="text-align:center; font-weight:bold; font-size:1.8rem; color:var(--sapin); border-bottom: 2px solid var(--vert-doux); margin-bottom:15px;">{j}</div>', unsafe_allow_html=True)
+            p_in = st.text_area("P", key=f"p_{i}", height=130, label_visibility="collapsed", placeholder="Planning")
             m_in = st.text_input("🍴", key=f"m_{i}", label_visibility="collapsed", placeholder="Menu")
             if st.button("💾", key=f"sv_{i}"): save_gs("Semaine", [d_str, p_in, m_in]); st.rerun()
             for row in s_data:
                 if str(row.get("Date")) == d_str:
-                    if row.get('Planning'): st.markdown(f'<div class="postit-planning">📌 {row.get("Planning")}</div>', unsafe_allow_html=True)
+                    if row.get('Planning'): st.markdown(f'<div class="postit-planning">{row.get("Planning")}</div>', unsafe_allow_html=True)
                     if row.get('Menu'): st.markdown(f'<div class="postit-menu">🥗 {row.get("Menu")}</div>', unsafe_allow_html=True)
 
-# --- TAB 3: ANNEE (Vert Doux) ---
+# --- TAB 3: ANNEE ---
 with tabs[2]:
     st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier Annuel 2026</div>', unsafe_allow_html=True)
     ce1, ce2, ce3 = st.columns([1, 2, 1])
@@ -155,21 +186,21 @@ with tabs[2]:
                         if d == 0: line += "   "
                         else: line += f"{get_circled_num(d)} " if f"{m_idx}-{d}" in marked else f"{d:2} "
                     res += line + "\n"
-                st.markdown(f'<div style="font-family:monospace; background:white; padding:10px; border-radius:0 0 10px 10px; border:1px solid var(--vert-doux); white-space:pre; text-align:center; font-size:0.8rem;">{res}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-family:monospace; background:white; padding:15px; border-radius:0 0 15px 15px; border:1px solid var(--vert-doux); white-space:pre; text-align:center; font-size:0.9rem; color:black !important;">{res}</div>', unsafe_allow_html=True)
 
-# --- TAB 4: TRACKERS (RESTAURATION COMPLÈTE) ---
+# --- TAB 4: TRACKERS ---
 with tabs[3]:
-    tr_tabs = st.tabs(["📚 LECTURE", "🩺 BIEN-ÊTRE", "🏠 MISSIONS TRIBU"])
+    tr_tabs = st.tabs(["📚 LECTURE", "🩺 BIEN-ÊTRE", "🏠 TRIBU"])
     with tr_tabs[0]:
         st.markdown('<div class="sous-titre-calli">Ma Bibliothèque</div>', unsafe_allow_html=True)
-        cl1, cl2 = st.columns(2)
-        l_titre = cl1.text_input("Titre")
-        l_auteur = cl1.text_input("Auteur")
-        l_genre = cl2.selectbox("Genre", ["Roman", "Bien-être", "Cuisine", "Travail"])
-        l_note = cl2.select_slider("Ma Note / 10", range(11), value=5)
-        l_cit = st.text_area("Citation favorite")
+        c_l1, c_l2 = st.columns(2)
+        l_t = c_l1.text_input("Titre", key="lt")
+        l_a = c_l1.text_input("Auteur", key="la")
+        l_g = c_l2.selectbox("Genre", ["Roman", "Bien-être", "Cuisine", "Thriller"], key="lg")
+        l_n = c_l2.select_slider("Note", range(11), value=5, key="ln")
+        l_cit = st.text_area("Une citation ?", key="lc")
         if st.button("💾 Sauver Livre"):
-            if l_titre: save_gs("Lecture", [datetime.now().strftime("%d/%m/%Y"), l_titre, l_auteur, l_genre, l_note, l_cit]); st.rerun()
+            if l_t: save_gs("Lecture", [datetime.now().strftime("%d/%m/%Y"), l_t, l_a, l_g, l_n, l_cit]); st.rerun()
         l_data = load_gs("Lecture")
         for i, b in enumerate(reversed(l_data)):
             with st.expander(f"📔 {b.get('Titre')} - {b.get('Auteur')}"):
@@ -178,44 +209,34 @@ with tabs[3]:
                 if st.button("🗑️", key=f"dl_{i}"): delete_gs("Lecture", len(l_data)-1-i); st.rerun()
 
     with tr_tabs[1]:
-        st.markdown('<div class="sous-titre-calli">Mon Bilan Santé</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sous-titre-calli">Santé & Bien-être</div>', unsafe_allow_html=True)
         cs1, cs2 = st.columns(2)
-        sport = cs1.text_input("Sport / Activité")
-        eau = cs1.slider("Verres d'eau 💧", 0, 15, 6)
-        migraine = cs2.select_slider("Migraine", options=["Aucune", "Gêne", "Douleur", "Intense", "Crise"])
-        m_notes = cs2.text_area("Notes additionnelles")
-        if st.button("💾 Sauver Bilan Santé"):
-            save_gs("Sante", [datetime.now().strftime("%d/%m/%Y"), sport, eau, migraine, m_notes]); st.success("Bilan enregistré !")
+        eau = cs1.slider("Eau 💧", 0, 15, 6, key="seau")
+        mig = cs2.select_slider("Migraine", options=["Aucune", "Gêne", "Douleur", "Intense", "Crise"], key="smig")
+        if st.button("💾 Sauver Bilan"):
+            save_gs("Sante", [datetime.now().strftime("%d/%m/%Y"), "", eau, mig, ""]); st.balloons()
 
     with tr_tabs[2]:
-        st.markdown('<div class="sous-titre-calli">Missions de la Tribu</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sous-titre-calli">Missions Tribu</div>', unsafe_allow_html=True)
         cm1, cm2, cm3 = st.columns(3)
-        m_q = cm1.selectbox("Qui ?", ["Maman 🌸", "Papa 👔", "Enfants 👦👧👶"])
-        m_t = cm2.selectbox("Action", ["🍽️ Vaisselle", "🗑️ Poubelles", "🧹 Ménage", "🧺 Linge"])
-        m_j = cm3.selectbox("Quand ?", jours)
-        if st.button("🚀 Valider Mission"):
+        m_q = cm1.selectbox("Qui ?", ["Maman", "Papa", "Enfants"], key="mq")
+        m_t = cm2.selectbox("Action", ["🍽️ Vaisselle", "🗑️ Poubelles", "🧹 Ménage", "🧺 Linge"], key="mt")
+        m_j = cm3.selectbox("Jour", jours, key="mj")
+        if st.button("🚀 Valider"):
             save_gs("Menage", [m_j, m_t, m_q]); st.rerun()
-        m_log = load_gs("Menage")
-        cols_m = st.columns(7)
-        for i, j_n in enumerate(jours):
-            with cols_m[i]:
-                st.markdown(f"**{j_n}**")
-                for entry in m_log:
-                    if entry.get("Jour") == j_n:
-                        st.markdown(f"<div style='background:var(--vert-doux); font-size:0.75rem; padding:5px; border-radius:5px; margin-bottom:3px;'>{entry.get('Tache')}<br><b>{entry.get('Qui')}</b></div>", unsafe_allow_html=True)
 
-# --- TAB 5: COURSES (Favoris + Post-its) ---
+# --- TAB 5: COURSES ---
 with tabs[4]:
-    st.markdown('<div class="sous-titre-calli">🛒 Ma Liste de Courses</div>', unsafe_allow_html=True)
-    favoris = ["🍞 Pain", "🥛 Lait", "🥚 Oeufs", "🍎 Fruits", "🍝 Pâtes"]
-    cols_f = st.columns(len(favoris))
-    for i, f in enumerate(favoris):
-        if cols_f[i].button(f, key=f"f_{i}"): st.session_state.shopping.append(f); st.rerun()
-    it = st.text_input("Ajouter un article...", key="shop_in")
+    st.markdown('<div class="sous-titre-calli">🛒 Ma Liste</div>', unsafe_allow_html=True)
+    favs = ["🍞 Pain", "🥛 Lait", "🥚 Oeufs", "🍎 Fruits", "🍝 Pâtes"]
+    cols_f = st.columns(len(favs))
+    for i, f in enumerate(favs):
+        if cols_f[i].button(f, key=f"fav_{i}"): st.session_state.shopping.append(f); st.rerun()
+    it = st.text_input("Autre chose ?", key="sh_in")
     if st.button("➕ Ajouter"):
         if it: st.session_state.shopping.append(it); st.rerun()
     st.markdown("---")
     for i, item in enumerate(st.session_state.shopping):
         c_a, c_b = st.columns([6, 1])
-        c_a.markdown(f'<div class="postit-course">🛒 {item}</div>', unsafe_allow_html=True)
+        c_a.markdown(f'<div style="background:#E1F5FE; padding:12px; border-radius:10px; border-left:6px solid #03A9F4; color:black; font-size:1.3rem;">🛒 {item}</div>', unsafe_allow_html=True)
         if c_b.button("🗑️", key=f"dc_{i}"): st.session_state.shopping.pop(i); st.rerun()
