@@ -33,49 +33,54 @@ def load_from_gsheet(worksheet_name):
         return ws.get_all_records()
     except: return []
 
-# --- 2. DESIGN ---
+# --- 2. DESIGN & POLICES (RESTAURÉS) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Comfortaa:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Comfortaa:wght@700&family=Courier+Prime&display=swap');
     
     :root {{
         --rose: #F48FB1;
         --sapin: #1B3022;
+        --or: #D4AF37;
         --vert-pale: #B2DFDB;
     }}
 
     .stApp {{
         background: linear-gradient(135deg, rgba(255, 209, 220, 0.7), rgba(178, 223, 219, 0.7)), url("{fond_url}");
-        background-size: cover; background-attachment: fixed;
+        background-size: cover; background-attachment: fixed; background-color: white !important;
     }}
 
-    .titre-calli {{ font-family: 'Dancing Script', cursive; font-size: 3.5rem; color: var(--sapin); text-align: center; }}
-    .sous-titre-calli {{ font-family: 'Dancing Script', cursive; font-size: 2.2rem; color: var(--sapin); }}
-
-    /* Correction des encadrés noirs et inputs */
-    p, label, span, div, .stMarkdown {{ font-family: 'Comfortaa', cursive !important; color: var(--sapin) !important; }}
+    .titre-calli {{
+        font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important;
+        color: var(--sapin) !important; text-align: center; -webkit-text-fill-color: var(--sapin) !important;
+    }}
     
-    .stTextArea textarea, .stTextInput input, div[data-baseweb="select"] > div {{
-        background-color: white !important;
-        color: var(--sapin) !important;
-        border: 2px solid var(--rose) !important;
-        border-radius: 12px !important;
-        -webkit-text-fill-color: var(--sapin) !important; /* Pour iPad */
+    .sous-titre-calli {{
+        font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important;
+        color: var(--sapin) !important; -webkit-text-fill-color: var(--sapin) !important;
+    }}
+
+    p, label, .stMarkdown, span, div, .stCheckbox {{
+        font-family: 'Comfortaa', cursive !important; color: var(--sapin) !important;
+    }}
+
+    /* Correction iPad pour les champs de saisie sans perdre le style */
+    textarea, input {{
+        background-color: white !important; color: var(--sapin) !important;
+        border: 2px solid var(--rose) !important; border-radius: 12px !important;
+        -webkit-text-fill-color: var(--sapin) !important;
     }}
 
     .stButton>button {{
-        background-color: var(--rose) !important;
-        color: white !important;
-        border-radius: 20px;
-        font-weight: bold;
-        border: none;
+        background-color: var(--rose) !important; color: white !important;
+        border-radius: 20px !important; font-weight: bold !important; border: none !important;
     }}
 
     .post-it {{
-        padding: 15px; border-radius: 15px; margin-bottom: 10px;
+        padding: 15px; border-radius: 15px; margin-bottom: 5px;
         box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
         border-left: 10px solid var(--rose);
     }}
@@ -101,8 +106,7 @@ if "user_data" not in st.session_state:
     with col_m:
         code = st.text_input("Code secret :", type="password")
         if st.button("Ouvrir mon journal") or code == "2125":
-            st.session_state.user_data = {"Nom": "MeyLune"}
-            st.rerun()
+            st.session_state.user_data = {"Nom": "MeyLune"}; st.rerun()
     st.stop()
 
 st.markdown('<div class="titre-calli">🌸 Mon Univers Quotidien</div>', unsafe_allow_html=True)
@@ -132,7 +136,7 @@ with tabs[0]:
                 save_to_gsheet("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), new_g])
                 st.session_state.g_ver += 1; st.rerun()
         for e in reversed(gratitude_entries):
-            st.markdown(f'<div class="post-it" style="background-color: white;"><small>{e.get("Date")}</small><br><i>{e.get("Texte")}</i></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="post-it" style="background-color: white; border-left-color: var(--or);"><small>{e.get("Date")}</small><br><i>{e.get("Texte")}</i></div>', unsafe_allow_html=True)
 
 # --- 🗓️ SEMAINE ---
 with tabs[1]:
@@ -153,43 +157,43 @@ with tabs[1]:
                     with cols[k]:
                         st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
                         st.text_area("", height=100, key=f"wk_{d}", label_visibility="collapsed")
-        st.button("💾 Sauvegarder la semaine", key="btn_w_s")
+        st.button("💾 Sauvegarder la semaine", key="save_w")
     with cd:
         st.markdown('<div class="p-header" style="background-color:white !important;">🍎 Menu</div>', unsafe_allow_html=True)
         for j in jours: st.text_input(j[:3], key=f"menu_{j}")
-        st.button("💾 Sauver Menu", key="btn_m_s")
+        st.button("💾 Sauver Menu", key="save_m")
 
 # --- 📅 ANNEE ---
 with tabs[2]:
     st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier 2026</div>', unsafe_allow_html=True)
+    mois_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
     for r in range(4):
         cols = st.columns(3)
         for c in range(3):
-            m = r * 3 + c + 1
+            m_idx = r * 3 + c + 1
             with cols[c]:
-                st.markdown(f'<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">{calendar.month_name[m].upper()}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div style="background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center; font-family:monospace;">{calendar.TextCalendar(0).formatmonth(2026, m).splitlines()[2:][0]}\n' + "\n".join(calendar.TextCalendar(0).formatmonth(2026, m).splitlines()[3:]) + '</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">{mois_fr[m_idx-1].upper()}</div>', unsafe_allow_html=True)
+                tc = calendar.TextCalendar(firstweekday=0)
+                cal_str = tc.formatmonth(2026, m_idx)
+                clean_cal = "Lu Ma Me Je Ve Sa Di\n" + "\n".join(cal_str.splitlines()[2:])
+                st.markdown(f'<div style="font-family:\'Courier Prime\'; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center;">{clean_cal}</div>', unsafe_allow_html=True)
 
-# --- 📊 TRACKERS (FICHE LECTURE) ---
+# --- 📊 TRACKERS ---
 with tabs[3]:
     st.markdown('<div class="sous-titre-calli">📚 Ma Fiche de Lecture</div>', unsafe_allow_html=True)
     tl1, tl2 = st.columns([2, 1])
     with tl1:
-        st.text_input("TITRE DU LIVRE")
-        st.text_input("AUTEUR")
-        st.date_input("DÉBUT LECTURE", key="bk_d")
-        st.date_input("FIN LECTURE", key="bk_f")
-    with tl2:
-        st.file_uploader("Couverture", type=['jpg','png'], key="bk_img")
-    
+        st.text_input("TITRE DU LIVRE"); st.text_input("AUTEUR")
+        st.date_input("DÉBUT LECTURE", key="bk_d"); st.date_input("FIN LECTURE", key="bk_f")
+    with tl2: st.file_uploader("Couverture", type=['jpg','png'], key="bk_img")
     st.slider("NOTE / 10", 1, 10, 5)
     st.markdown("#### Mon Ressenti")
     tr1, tr2, tr3, tr4 = st.columns(4)
-    tr1.select_slider("💧 Triste", options=[1,2,3,4,5], key="res1")
-    tr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="res2")
-    tr3.select_slider("🤩 Rire", options=[1,2,3,4,5], key="res3")
-    tr4.select_slider("❤️ Love", options=[1,2,3,4,5], key="res4")
-    st.button("💾 ENREGISTRER DANS LA BIBLIOTHÈQUE")
+    tr1.select_slider("💧 Triste", options=[1,2,3,4,5], key="r1")
+    tr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="r2")
+    tr3.select_slider("🤩 Rire", options=[1,2,3,4,5], key="r3")
+    tr4.select_slider("❤️ Love", options=[1,2,3,4,5], key="r4")
+    st.button("💾 ENREGISTRER LECTURE")
 
 # --- 🛒 COURSES ---
 with tabs[4]:
@@ -209,4 +213,4 @@ with tabs[4]:
 # --- 🎨 STICKERS ---
 with tabs[5]:
     st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
-    st.write("Section bientôt prête avec tes PNG GitHub !")
+    st.write("Section prête pour tes PNG !")
