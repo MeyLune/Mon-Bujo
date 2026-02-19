@@ -22,17 +22,14 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. CONFIGURATION & STYLE (FORÇAGE MODE CLAIR) ---
+# --- 2. CONFIGURATION & STYLE (FORÇAGE CLAIR + IPAD) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
-
-# Ton image de fond
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Indie+Flower&display=swap');
     
-    /* FORCE LE FOND ET LE MODE CLAIR */
     .stApp {{
         background-image: url("{fond_url}");
         background-size: cover;
@@ -41,7 +38,6 @@ st.markdown(f"""
         background-color: white !important;
     }}
 
-    /* FIX ZONES NOIRES : On force le blanc partout */
     div[data-baseweb="textarea"], div[data-baseweb="input"], 
     .stTextArea textarea, .stTextInput input, .stNumberInput input {{
         background-color: rgba(255, 255, 255, 0.95) !important;
@@ -66,7 +62,7 @@ st.markdown(f"""
         font-weight: bold !important;
     }}
 
-    .p-header {{ background-color: #f06292 !important; color: white !important; padding: 10px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; }}
+    .p-header {{ background-color: #f06292 !important; color: white !important; padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; font-size: 14px; }}
     .post-it {{ background: rgba(255, 249, 196, 0.95); padding: 15px; border-left: 6px solid #fbc02d; font-family: 'Indie Flower', cursive; color: #5d4037 !important; border-radius: 5px; }}
 </style>
 """, unsafe_allow_html=True)
@@ -84,18 +80,21 @@ if not st.session_state.user_data:
                 st.session_state.user_data = {"Nom": "MeyLune", "Acces": "OUI"}
                 st.rerun()
             elif sh:
-                users = sh.worksheet("Utilisateurs").get_all_records()
-                for u in users:
-                    if str(u['Code']) == str(code):
-                        st.session_state.user_data = {"Nom": u['Nom'], "Acces": u['Accès Journal']}
-                        st.rerun()
+                try:
+                    users = sh.worksheet("Utilisateurs").get_all_records()
+                    for u in users:
+                        if str(u['Code']) == str(code):
+                            st.session_state.user_data = {"Nom": u['Nom'], "Acces": u['Accès Journal']}
+                            st.rerun()
+                except: st.error("Erreur de base de données.")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
+# --- 4. INTERFACE ---
 user_nom = st.session_state.user_data['Nom']
-tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES"])
+tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES", "🎨 STICKERS"])
 
-# --- ONGLET SEMAINE (Restauré) ---
+# --- SEMAINE ---
 with tabs[1]:
     if 'w_off' not in st.session_state: st.session_state.w_off = 0
     start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
@@ -105,63 +104,67 @@ with tabs[1]:
     if c3.button("➡️"): st.session_state.w_off += 1; st.rerun()
     c2.markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]}</h3>", unsafe_allow_html=True)
 
-    col_g, col_m = st.columns([3, 1.2])
+    col_g, col_d = st.columns([3, 1.2])
     sem_notes = {}
+    jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     with col_g:
-        jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
         for i in range(0, 7, 2):
             cols = st.columns(2)
             for j in range(2):
                 if (i+j) < 7:
                     d_str = (start_week + timedelta(days=i+j)).strftime("%d/%m/%Y")
                     with cols[j]:
-                        st.markdown(f'<div class="p-header">{jours[i+j]} {d_str[:5]}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="p-header">{jours_fr[i+j]} {d_str[:5]}</div>', unsafe_allow_html=True)
                         sem_notes[d_str] = st.text_area("Note", height=100, key=f"wk_{d_str}", label_visibility="collapsed")
-        
         if st.button("💾 SAUVEGARDER LA SEMAINE"):
             if sh:
                 for dk, txt in sem_notes.items():
                     if txt.strip(): sh.worksheet("Note").append_row([dk, user_nom, txt])
-                st.success("Notes enregistrées ! ✨")
+                st.success("C'est enregistré ! ✨")
 
-    with col_m:
+    with col_d:
         st.markdown('<div class="post-it"><b>🍎 Menu</b></div>', unsafe_allow_html=True)
-        m_vals = [st.text_input(j, key=f"m_{j}") for j in ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]]
+        m_vals = [st.text_input(j[:3], key=f"m_{j}") for j in jours_fr]
         if st.button("💾 Sauver Menu"):
-            sh.worksheet("Menu").append_row([start_week.strftime("%d/%m/%Y"), user_nom] + m_vals)
+            if sh: sh.worksheet("Menu").append_row([start_week.strftime("%d/%m/%Y"), user_nom] + m_vals)
             st.success("Menu OK !")
 
-# --- ANNEE (Calendrier Esthétique) ---
+# --- ANNEE (EN FRANÇAIS) ---
 with tabs[2]:
+    mois_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
     for r in range(4):
         cols = st.columns(3)
         for c in range(3):
-            m = r * 3 + c + 1
+            m_idx = r * 3 + c + 1
             with cols[c]:
-                st.markdown(f'<div class="cal-card"><div class="p-header">{calendar.month_name[m].upper()}</div><div style="text-align:center; padding:10px; font-size:12px;">{calendar.month(2026, m).split(chr(10), 1)[1].replace(chr(10), "<br>")}</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="cal-card"><div class="p-header">{mois_fr[m_idx-1].upper()}</div><div style="text-align:center; padding:10px; font-size:11px; color:black;">{calendar.month(2026, m_idx).split(chr(10), 1)[1].replace(chr(10), "<br>")}</div></div>', unsafe_allow_html=True)
 
-# --- COURSES (Prédéfinis Restaurés) ---
+# --- COURSES ---
 with tabs[4]:
-    st.markdown("### 🛒 Liste de Courses")
+    st.markdown("### 🛒 Liste Rapide")
     items = ["Lait", "Oeufs", "Pain", "Fruits", "Légumes", "Eau"]
     cols_c = st.columns(6)
     for i, it in enumerate(items):
         if cols_c[i].button(it):
-            sh.worksheet("Courses").append_row([it, user_nom]); st.rerun()
-    
-    autre = st.text_input("➕ Ajouter autre chose :")
+            if sh: sh.worksheet("Courses").append_row([it, user_nom]); st.rerun()
+    autre = st.text_input("➕ Ajouter un article :")
     if st.button("Ajouter"):
-        sh.worksheet("Courses").append_row([autre, user_nom]); st.rerun()
+        if sh: sh.worksheet("Courses").append_row([autre, user_nom]); st.rerun()
 
-# --- TRACKERS (Restaurés) ---
+# --- STICKERS ---
+with tabs[5]:
+    st.markdown("### 🎨 Ma Planche de Stickers")
+    col_s = st.columns(4)
+    stickers = ["🌸", "🌿", "⭐", "🍃", "🍎", "🥑", "📅", "✨"]
+    for i, s in enumerate(stickers):
+        with col_s[i % 4]:
+            if st.button(s, key=f"stick_{i}"):
+                st.balloons()
+                st.info(f"Sticker {s} sélectionné !")
+
+# --- TRACKERS ---
 with tabs[3]:
-    st.markdown("### 📊 Mes Trackers")
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        st.write("💧 Hydratation (Verres)")
-        st.slider("", 0, 10, 5, key="tr_eau")
-    with col_t2:
-        st.write("😴 Sommeil (Heures)")
-        st.number_input("", 0, 15, 8, key="tr_sleep")
-    if st.button("Enregistrer Trackers"):
-        st.success("Données sauvegardées !")
+    st.markdown("### 📊 Suivi")
+    st.slider("💧 Verres d'eau", 0, 12, 6)
+    st.slider("😴 Sommeil (heures)", 0, 12, 8)
+    if st.button("Enregistrer Suivi"): st.success("Données sauvegardées !")
