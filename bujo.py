@@ -21,7 +21,7 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. DESIGN : CALLIGRAPHIE, POST-ITS & ANTI-NOIR ---
+# --- 2. DESIGN : CALLIGRAPHIE & POST-ITS ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
@@ -31,9 +31,8 @@ st.markdown(f"""
     
     :root {{
         --rose: #F48FB1;
-        --rose-pale: rgba(255, 209, 220, 0.6);
-        --vert-pale: rgba(178, 223, 219, 0.6);
         --sapin: #1B3022;
+        --or: #D4AF37;
     }}
 
     .stApp {{
@@ -43,7 +42,6 @@ st.markdown(f"""
         background-color: white !important;
     }}
 
-    /* TITRES CALLIGRAPHIÉS (Dancing Script) */
     .titre-calli {{
         font-family: 'Dancing Script', cursive !important;
         font-size: 3.5rem !important;
@@ -57,10 +55,10 @@ st.markdown(f"""
         font-size: 2.2rem !important;
         color: var(--sapin) !important;
         -webkit-text-fill-color: var(--sapin) !important;
-        margin-bottom: 15px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }}
 
-    /* TEXTE ET INPUTS */
     p, label, .stMarkdown, span, div {{
         font-family: 'Comfortaa', cursive !important;
         color: var(--sapin) !important;
@@ -70,28 +68,23 @@ st.markdown(f"""
     textarea, input, div[data-baseweb="base-input"], div[data-baseweb="textarea"], div[data-baseweb="select"], div[data-testid="stFileUploadDropzone"] {{
         background-color: white !important;
         color: var(--sapin) !important;
-        -webkit-text-fill-color: var(--sapin) !important;
         border: 2px solid var(--rose) !important;
         border-radius: 12px !important;
     }}
 
-    /* BOUTONS ROSES */
     .stButton>button {{
         background-color: var(--rose) !important;
         color: white !important;
-        -webkit-text-fill-color: white !important;
         border-radius: 20px !important;
         font-weight: bold !important;
         border: none !important;
     }}
 
-    /* STYLE POST-IT */
     .post-it {{
         padding: 15px;
         border-radius: 15px;
         margin-bottom: 5px;
         box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
-        font-family: 'Comfortaa', cursive !important;
     }}
 
     .p-header {{ 
@@ -120,45 +113,62 @@ tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKER
 
 # --- ONGLET JOURNAL ---
 with tabs[0]:
-    st.markdown(f'<div class="sous-titre-calli">🖋️ Mes pensées du {datetime.now().strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    col_j1, col_j2 = st.columns(2)
     
-    # Saisie
-    new_thought = st.text_area("Libère ton esprit...", height=150, key="input_journal", label_visibility="collapsed")
-    if st.button("💾 Enregistrer la pensée"):
-        if new_thought:
-            if 'temp_journal' not in st.session_state: st.session_state.temp_journal = []
-            st.session_state.temp_journal.insert(0, {"text": new_thought, "date": datetime.now().strftime("%H:%M")})
-            st.rerun()
+    with col_j1:
+        st.markdown(f'<div class="sous-titre-calli">🖋️ Mes pensées du {datetime.now().strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+        # Saisie Pensées
+        if 'input_pensee' not in st.session_state: st.session_state.input_pensee = ""
+        
+        def save_pensee():
+            txt = st.session_state.temp_p_input
+            if txt:
+                if 'list_pensees' not in st.session_state: st.session_state.list_pensees = []
+                st.session_state.list_pensees.insert(0, {"text": txt, "date": datetime.now().strftime("%H:%M")})
+                st.session_state.input_pensee = "" # Vide le texte après
+                st.toast("Pensée épinglée ! ✨")
 
-    st.markdown("---")
-    
-    # Affichage Post-its
-    if 'temp_journal' in st.session_state:
-        for idx, entry in enumerate(st.session_state.temp_journal):
-            bg = "rgba(255, 209, 220, 0.6)" if idx % 2 == 0 else "rgba(178, 223, 219, 0.6)"
-            border = "#F48FB1" if idx % 2 == 0 else "#80CBC4"
-            
-            st.markdown(f"""
-                <div class="post-it" style="background-color: {bg}; border-left: 10px solid {border};">
-                    <small style="color: grey;">{entry['date']}</small><br>
-                    {entry['text']}
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Petit bouton modifier
-            c_mod, _ = st.columns([1, 5])
-            if c_mod.button("Modifier", key=f"mod_{idx}"):
-                st.toast("Mode édition activé")
+        st.text_area("Libère ton esprit...", height=150, key="temp_p_input", label_visibility="collapsed")
+        st.button("💾 Enregistrer la pensée", on_click=save_pensee)
+        
+        st.markdown("---")
+        # Affichage Pensées
+        if 'list_pensees' in st.session_state:
+            for idx, entry in enumerate(st.session_state.list_pensees):
+                bg = "rgba(255, 209, 220, 0.6)" if idx % 2 == 0 else "rgba(178, 223, 219, 0.6)"
+                border = "#F48FB1" if idx % 2 == 0 else "#80CBC4"
+                st.markdown(f'<div class="post-it" style="background-color: {bg}; border-left: 10px solid {border};"><small>{entry["date"]}</small><br>{entry["text"]}</div>', unsafe_allow_html=True)
+                c_mod, _ = st.columns([1, 4])
+                c_mod.button("Modifier", key=f"mp_{idx}", help="Petit bouton de modif")
 
-# --- ONGLET SEMAINE ---
+    with col_j2:
+        st.markdown(f'<div class="sous-titre-calli">✨ Gratitude pour aujourd\'hui</div>', unsafe_allow_html=True)
+        # Saisie Gratitude
+        def save_gratitude():
+            txt = st.session_state.temp_g_input
+            if txt:
+                if 'list_gratitudes' not in st.session_state: st.session_state.list_gratitudes = []
+                st.session_state.list_gratitudes.insert(0, {"text": txt, "date": datetime.now().strftime("%H:%M")})
+                st.toast("Gratitude enregistrée ! 🌟")
+
+        st.text_area("Aujourd'hui, je remercie pour...", height=150, key="temp_g_input", label_visibility="collapsed")
+        st.button("🙏 Enregistrer ma gratitude", on_click=save_gratitude)
+
+        st.markdown("---")
+        # Affichage Gratitudes
+        if 'list_gratitudes' in st.session_state:
+            for idx, entry in enumerate(st.session_state.list_gratitudes):
+                st.markdown(f'<div class="post-it" style="background-color: white; border-left: 10px solid var(--or);"><small>{entry["date"]}</small><br><i>{entry["text"]}</i></div>', unsafe_allow_html=True)
+                c_mod, _ = st.columns([1, 4])
+                c_mod.button("Modifier", key=f"mg_{idx}")
+
+# --- ONGLET SEMAINE --- (Identique avec titres calligraphiés)
 with tabs[1]:
     if 'w_off' not in st.session_state: st.session_state.w_off = 0
     start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
-    
     col_nav = st.columns([1, 3, 1])
     if col_nav[0].button("⬅️"): st.session_state.w_off -= 1; st.rerun()
     if col_nav[2].button("➡️"): st.session_state.w_off += 1; st.rerun()
-    
     col_nav[1].markdown(f'<div class="sous-titre-calli" style="text-align:center;">Semaine {start_week.isocalendar()[1]} - 2026</div>', unsafe_allow_html=True)
 
     col_g, col_d = st.columns([3, 1.2])
@@ -172,16 +182,11 @@ with tabs[1]:
                     with cols[k]:
                         st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
                         st.text_area("", height=100, key=f"wk_{d}", label_visibility="collapsed")
-        cs1, cs2 = st.columns(2)
-        cs1.button("💾 Sauvegarder la semaine", key="save_wk")
-        cs2.button("📝 Modifier la semaine", key="mod_wk")
 
     with col_d:
-        st.markdown('<div class="p-header" style="background-color:white !important; border-bottom:none;">🍎 Menu</div>', unsafe_allow_html=True)
+        st.markdown('<div class="p-header" style="background-color:white !important;">🍎 Menu</div>', unsafe_allow_html=True)
         for j in jours: st.text_input(j[:3], key=f"menu_{j}")
-        cm1, cm2 = st.columns(2)
-        cm1.button("💾 Sauver Menu", key="s_menu")
-        cm2.button("📝 Modifier Menu", key="m_menu")
+        st.button("💾 Sauver Menu")
 
 # --- ONGLET ANNEE ---
 with tabs[2]:
@@ -206,21 +211,10 @@ with tabs[3]:
         st.text_input("TITRE DU LIVRE")
         st.text_input("AUTEUR")
         st.date_input("DÉBUT")
-        st.date_input("FINI")
     with col_l2:
-        st.file_uploader("Prendre une photo", type=['jpg','png','jpeg'], key="up_f")
-    
+        st.file_uploader("Capture couverture", type=['jpg','png','jpeg'])
     st.slider("NOTE / 10", 1, 10, 5)
-    st.markdown("#### 🎭 Ressenti")
-    cr1, cr2, cr3, cr4 = st.columns(4)
-    cr1.select_slider("💧 Triste", options=[1,2,3,4,5])
-    cr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5])
-    cr3.select_slider("🤩 Rire", options=[1,2,3,4,5])
-    cr4.select_slider("❤️ Love", options=[1,2,3,4,5])
-    
-    st.multiselect("Sentiments", ["Coup de cœur ❤️", "À lire absolument", "Triste 😭", "Incontournable", "Décevant"])
-    st.text_area("🎵 Playlist & Citations")
-    st.button("💾 ENREGISTRER DANS LA BIBLIOTHÈQUE")
+    st.button("💾 ENREGISTRER")
 
 # --- ONGLET COURSES ---
 with tabs[4]:
@@ -228,7 +222,7 @@ with tabs[4]:
     c_l, c_r = st.columns([2, 1])
     with c_l:
         st.date_input("Date prévue", value=datetime.now())
-        st.text_input("➕ Ajouter un article")
+        st.text_input("➕ Ajouter article")
         st.button("Valider la liste")
     with c_r:
         st.markdown('<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">📅 Rappel Semaine</div>', unsafe_allow_html=True)
@@ -239,12 +233,4 @@ with tabs[4]:
 with tabs[5]:
     st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
     up = st.file_uploader("Upload", type=['png', 'jpg'], key="up_s")
-    if up and st.button("Ajouter"):
-        if 'stk_perso' not in st.session_state: st.session_state.stk_perso = []
-        st.session_state.stk_perso.append(up)
-    
-    if 'stk_perso' in st.session_state:
-        cols_s = st.columns(5)
-        for idx, s in enumerate(st.session_state.stk_perso):
-            with cols_s[idx % 5]:
-                st.image(s, width=80)
+    if up: st.image(up, width=100)
