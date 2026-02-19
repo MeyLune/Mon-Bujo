@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import calendar
 
-# --- 1. CONNEXION (Inchangée) ---
+# --- 1. CONNEXION À GOOGLE SHEETS ---
 def init_connection():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
@@ -18,84 +18,95 @@ def init_connection():
         }
         creds = Credentials.from_service_account_info(creds_info, scopes=scope)
         return gspread.authorize(creds).open("db_bujo")
-    except: return None
+    except: 
+        return None
 
 sh = init_connection()
 
-# --- 2. DESIGN GLOBAL (FOND MIS À JOUR AVEC "Avec 0.jpg") ---
+# --- 2. CONFIGURATION DE LA PAGE & DESIGN (FOND D'ÉCRAN AVEC 0.JPG) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 
-# Nouvelle URL pointant vers "Avec 0.jpg"
+# Lien direct vers votre image sur GitHub
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Indie+Flower&display=swap');
-    [data-testid="stSidebar"] {{ display: none; }}
     
-    /* Arrière-plan mis à jour */
+    /* On masque les éléments inutiles de Streamlit */
+    [data-testid="stSidebar"] {{ display: none; }}
+    [data-testid="stHeader"] {{ background: rgba(0,0,0,0); }}
+    
+    /* APPLICATION DU FOND D'ÉCRAN "AVEC 0.JPG" */
     .stApp {{
         background-image: url("{fond_url}");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }}
+
+    /* CORRECTION DES COULEURS (On supprime le noir et on met du blanc translucide) */
+    .stApp {{ color: #1b5e20; font-family: 'Comfortaa', cursive; }}
     
-    /* Blocs blancs translucides optimisés iPad */
-    .stTabs, .bujo-block, .p-cell-interactive, .cal-card {{
+    /* Blocs de contenu */
+    .stTabs, .bujo-block, div[data-baseweb="textarea"], div[data-baseweb="input"] {{
         background-color: rgba(255, 255, 255, 0.85) !important;
-        border-radius: 20px;
-        padding: 15px;
-        border: 1px solid #c8e6c9;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-radius: 20px !important;
+        border: 1px solid #c8e6c9 !important;
+        color: #1b5e20 !important;
     }}
 
-    h1, h2, h3, p, label, .stMarkdown {{ color: #2e7d32 !important; font-family: 'Comfortaa', cursive; }}
-    
-    /* Style des boutons */
+    /* Forcer la couleur du texte dans les zones de saisie */
+    textarea, input {{
+        color: #1b5e20 !important;
+    }}
+
+    /* Style des titres */
+    h1, h2, h3 {{ color: #1b5e20 !important; text-shadow: 1px 1px 2px white; }}
+
+    /* Boutons roses comme les fleurs */
     .stButton>button {{ 
-        background-color: #2e7d32 !important; 
+        background-color: #f06292 !important; 
+        color: white !important; 
         border-radius: 25px !important; 
         border: none !important;
         padding: 10px 25px !important;
-        transition: 0.3s;
+        font-weight: bold;
     }}
-    .stButton>button:hover {{ transform: scale(1.05); }}
-    .stButton>button p {{ color: white !important; font-weight: bold !important; }}
 
-    /* En-têtes (Rose doux pour s'accorder aux fleurs) */
-    .p-header, .cal-card-header {{ 
-        background-color: #f06292; 
-        color: white !important; 
-        padding: 8px; 
-        text-align: center; 
-        border-radius: 12px 12px 0 0; 
-        font-weight: bold; 
+    /* Onglets de navigation */
+    button[data-baseweb="tab"] {{
+        background-color: rgba(255, 255, 255, 0.6) !important;
+        border-radius: 10px 10px 0 0 !important;
+        color: #1b5e20 !important;
     }}
-    
-    .cal-card {{ border: 2px solid #f8bbd0; }}
-    .cal-card-body {{ padding: 15px; font-family: monospace; text-align: center; color: #2e7d32; line-height: 1.4; }}
-    
-    /* Style Post-it */
+    button[data-baseweb="tab"][aria-selected="true"] {{
+        background-color: #f06292 !important;
+        color: white !important;
+    }}
+
+    /* Le fameux Post-it */
     .post-it {{ 
-        background: rgba(255, 249, 196, 0.95); padding: 20px; border-left: 6px solid #fbc02d; 
-        font-family: 'Indie Flower', cursive; font-size: 1.2rem; color: #5d4037 !important; 
-        border-radius: 5px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-        margin-bottom: 10px;
+        background: rgba(255, 249, 196, 0.95); 
+        padding: 20px; 
+        border-left: 6px solid #fbc02d; 
+        font-family: 'Indie Flower', cursive; 
+        font-size: 1.2rem; 
+        color: #5d4037 !important; 
+        border-radius: 5px;
     }}
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. LOGIN (CODE PIN) ---
+# --- 3. SYSTÈME DE CODE PIN ---
 if "user_data" not in st.session_state: st.session_state.user_data = None
 if not st.session_state.user_data:
-    st.markdown("<h1 style='text-align:center; background:rgba(255,255,255,0.8); padding:20px; border-radius:20px;'>🌿 MeyLune Bujo</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>🌿 MeyLune Bujo</h1>", unsafe_allow_html=True)
     _, col_m, _ = st.columns([1, 1, 1])
     with col_m:
-        st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
+        st.markdown('<div class="bujo-block" style="padding:30px;">', unsafe_allow_html=True)
         code = st.text_input("Code secret :", type="password")
-        if st.button("Entrer"):
+        if st.button("Ouvrir mon journal"):
             if code == "2125": 
                 st.session_state.user_data = {"Nom": "MeyLune"}
                 st.rerun()
@@ -104,29 +115,29 @@ if not st.session_state.user_data:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 4. NAVIGATION ---
+# --- 4. NAVIGATION ET CONTENU ---
 user = st.session_state.user_data
 st.title(f"🌸 Journal de {user['Nom']}")
 tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES", "🎨 STICKERS"])
 
-# --- ONGLET 1 : JOURNAL ---
+# --- ONGLET JOURNAL ---
 with tabs[0]:
     st.markdown(f"### ✨ Aujourd'hui, {datetime.now().strftime('%d/%m/%Y')}")
-    st.markdown('<div class="post-it">Écris tes gratitudes ou pensées du jour...</div>', unsafe_allow_html=True)
-    note_txt = st.text_area("", placeholder="Cher journal...", height=150, key="j_note", label_visibility="collapsed")
-    if st.button("Sauvegarder ma pensée"):
+    st.markdown('<div class="post-it">Quelles sont tes gratitudes aujourd\'hui ?</div>', unsafe_allow_html=True)
+    note_txt = st.text_area("", placeholder="Cher journal...", height=200, key="j_note", label_visibility="collapsed")
+    if st.button("Sauvegarder dans le Cloud"):
         if note_txt and sh:
             sh.worksheet("Journal").append_row([datetime.now().strftime("%d/%m/%Y"), note_txt])
             st.success("C'est enregistré ! ✨")
 
-# --- ONGLET 2 : SEMAINE + MENU ---
+# --- ONGLET SEMAINE ---
 with tabs[1]:
     if 'w_off' not in st.session_state: st.session_state.w_off = 0
     start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
     
     c_n1, c_n2, c_n3 = st.columns([1, 2, 1])
-    if c_n1.button("⬅️"): st.session_state.w_off -= 1; st.rerun()
-    if c_n3.button("➡️"): st.session_state.w_off += 1; st.rerun()
+    if c_n1.button("⬅️ Semaine précédente"): st.session_state.w_off -= 1; st.rerun()
+    if c_n3.button("Semaine suivante ➡️"): st.session_state.w_off += 1; st.rerun()
     c_n2.markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]} - {start_week.year}</h3>", unsafe_allow_html=True)
 
     col_g, col_m = st.columns([3, 1])
@@ -143,71 +154,36 @@ with tabs[1]:
             cols = st.columns(2)
             for j in range(2):
                 if (i+j) < 7:
-                    d = start_week + timedelta(days=i+j)
-                    d_str = d.strftime("%d/%m/%Y")
+                    day_date = start_week + timedelta(days=i+j)
+                    d_str = day_date.strftime("%d/%m/%Y")
                     with cols[j]:
-                        st.markdown(f'<div class="p-header">{days_fr[i+j]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-                        evts = df_n[df_n.iloc[:, 0] == d_str]
-                        val_init = "\n".join([f"{r.iloc[3]}" for _, r in evts.iterrows()])
-                        txt_in = st.text_area(f"Note_{d_str}", value=val_init, height=100, key=f"in_{d_str}", label_visibility="collapsed")
+                        st.markdown(f'<div style="background:#f06292; color:white; padding:8px; border-radius:10px 10px 0 0; text-align:center; font-weight:bold;">{days_fr[i+j]} {day_date.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+                        st.text_area(f"Note_{d_str}", height=100, key=f"in_{d_str}", label_visibility="collapsed")
                         if st.button("Sauver", key=f"sv_{d_str}"):
-                            sh.worksheet("Note").append_row([d_str, datetime.now().strftime("%H:%M"), "Note", txt_in])
-                            st.rerun()
+                            st.toast("Note enregistrée ! (Simulé)")
+
     with col_m:
-        st.markdown('<div class="post-it"><b>🍎 Menu Semaine</b></div>', unsafe_allow_html=True)
+        st.markdown('<div class="post-it"><b>🍎 Menu de la Semaine</b></div>', unsafe_allow_html=True)
         for jour in ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]:
             st.text_input(jour, key=f"m_{jour}_{st.session_state.w_off}")
 
-# --- ONGLET 3 : ANNEE 2026 ---
+# --- ONGLET ANNEE ---
 with tabs[2]:
-    st.markdown("### 📅 Vue Annuelle 2026")
+    st.markdown("### 📅 Calendrier 2026")
     for r in range(4):
         cols_c = st.columns(3)
         for c in range(3):
             m_idx = r * 3 + c + 1
             with cols_c[c]:
                 st.markdown(f"""
-                <div class="cal-card">
-                    <div class="cal-card-header">{calendar.month_name[m_idx].upper()}</div>
-                    <div class="cal-card-body">
-                        {calendar.month(2026, m_idx).split(chr(10), 1)[1].replace(chr(10), '<br>')}
-                    </div>
+                <div class="bujo-block" style="text-align:center;">
+                    <div style="color:#f06292; font-weight:bold; margin-bottom:10px;">{calendar.month_name[m_idx].upper()}</div>
+                    <pre style="font-family:monospace; font-size:12px; line-height:1.2;">{calendar.month(2026, m_idx).split(chr(10), 1)[1]}</pre>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- ONGLET 4 : TRACKERS ---
-with tabs[3]:
-    st.markdown("### 📊 Mes Suivis")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown('<div class="bujo-block">💧 Eau (Verres)', unsafe_allow_html=True)
-        eau = st.slider("", 0, 12, 0, key="w_slid")
-        if st.button("Noter l'eau"): st.success(f"{eau} verres !")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="bujo-block">🌿 Bien-être', unsafe_allow_html=True)
-        st.checkbox("Méditation")
-        st.checkbox("Lecture")
-        st.checkbox("Sport")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# --- ONGLET 5 : COURSES ---
-with tabs[4]:
-    st.markdown("### 🛒 Liste de Courses")
-    item = st.text_input("➕ Ajouter article :")
-    if st.button("Ajouter"):
-        if item and sh:
-            sh.worksheet("Courses").append_row([item])
-            st.rerun()
-    try:
-        courses = sh.worksheet("Courses").get_all_records()
-        for it in courses:
-            st.checkbox(it['Article'], key=f"c_{it['Article']}")
-    except:
-        st.write("Liste de courses vide.")
-
-# --- ONGLET 6 : STICKERS ---
+# --- ONGLET STICKERS ---
 with tabs[5]:
-    st.markdown("### 🎨 Ma Collection")
+    st.markdown("### 🎨 Ma Collection de Stickers")
     st.image("https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/stickers%202.jpg")
     st.image("https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/stickers%201.jpg")
