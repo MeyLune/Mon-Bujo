@@ -159,4 +159,9 @@ with tabs[4]:
     if st.button("Ajouter ➕"):
         if it: st.session_state.shopping.append(it); st.rerun()
     
-    st.markdown('<div class="post-it-yellow"><b>
+    st.markdown('<div class="post-it-yellow"><b>À ACHETER :</b><br>', unsafe_allow_html=True)
+    for i, val in enumerate(st.session_state.shopping):
+        c_i1, c_i2 = st.columns([5, 1])
+        c_i1.write(f"☐ {val}")
+        if c_i2.button("❌", key=f"del_{i}"): st.session_state.shopping.pop(i); st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
