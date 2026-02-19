@@ -33,63 +33,23 @@ def load_from_gsheet(worksheet_name):
         return ws.get_all_records()
     except: return []
 
-# --- 2. DESIGN & POLICES (RESTAURÉS) ---
+# --- 2. DESIGN & POLICES ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Comfortaa:wght@700&family=Courier+Prime&display=swap');
-    
-    :root {{
-        --rose: #F48FB1;
-        --sapin: #1B3022;
-        --or: #D4AF37;
-        --vert-pale: #B2DFDB;
-    }}
-
-    .stApp {{
-        background: linear-gradient(135deg, rgba(255, 209, 220, 0.7), rgba(178, 223, 219, 0.7)), url("{fond_url}");
-        background-size: cover; background-attachment: fixed; background-color: white !important;
-    }}
-
-    .titre-calli {{
-        font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important;
-        color: var(--sapin) !important; text-align: center; -webkit-text-fill-color: var(--sapin) !important;
-    }}
-    
-    .sous-titre-calli {{
-        font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important;
-        color: var(--sapin) !important; -webkit-text-fill-color: var(--sapin) !important;
-    }}
-
-    p, label, .stMarkdown, span, div, .stCheckbox {{
-        font-family: 'Comfortaa', cursive !important; color: var(--sapin) !important;
-    }}
-
-    /* Correction iPad pour les champs de saisie sans perdre le style */
-    textarea, input {{
-        background-color: white !important; color: var(--sapin) !important;
-        border: 2px solid var(--rose) !important; border-radius: 12px !important;
-        -webkit-text-fill-color: var(--sapin) !important;
-    }}
-
-    .stButton>button {{
-        background-color: var(--rose) !important; color: white !important;
-        border-radius: 20px !important; font-weight: bold !important; border: none !important;
-    }}
-
-    .post-it {{
-        padding: 15px; border-radius: 15px; margin-bottom: 5px;
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
-        border-left: 10px solid var(--rose);
-    }}
-
-    .p-header {{ 
-        background-color: var(--vert-pale) !important; color: var(--sapin) !important;
-        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; 
-        font-weight: bold; border: 1px solid var(--rose);
-    }}
+    :root {{ --rose: #F48FB1; --sapin: #1B3022; --or: #D4AF37; --vert-pale: #B2DFDB; }}
+    .stApp {{ background: linear-gradient(135deg, rgba(255, 209, 220, 0.7), rgba(178, 223, 219, 0.7)), url("{fond_url}"); background-size: cover; background-attachment: fixed; background-color: white !important; }}
+    .titre-calli {{ font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important; color: var(--sapin) !important; text-align: center; }}
+    .sous-titre-calli {{ font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important; color: var(--sapin) !important; }}
+    p, label, .stMarkdown, span, div, .stCheckbox {{ font-family: 'Comfortaa', cursive !important; color: var(--sapin) !important; }}
+    textarea, input {{ background-color: white !important; color: var(--sapin) !important; border: 2px solid var(--rose) !important; border-radius: 12px !important; -webkit-text-fill-color: var(--sapin) !important; }}
+    .stButton>button {{ background-color: var(--rose) !important; color: white !important; border-radius: 20px !important; font-weight: bold !important; border: none !important; }}
+    .post-it {{ padding: 15px; border-radius: 15px; margin-bottom: 5px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); border-left: 10px solid var(--rose); }}
+    .p-header {{ background-color: var(--vert-pale) !important; color: var(--sapin) !important; padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; border: 1px solid var(--rose); }}
+    .event-card {{ background: rgba(255,255,255,0.5); border: 1px dashed var(--rose); border-radius: 10px; padding: 10px; margin: 5px 0; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -115,9 +75,8 @@ tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKER
 # --- ✍️ JOURNAL ---
 with tabs[0]:
     col1, col2 = st.columns(2)
-    journal_entries = load_from_gsheet("Journal")
-    gratitude_entries = load_from_gsheet("Gratitude")
-
+    j_entries = load_from_gsheet("Journal")
+    g_entries = load_from_gsheet("Gratitude")
     with col1:
         st.markdown('<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
         new_j = st.text_area("...", height=150, key=f"j_{st.session_state.j_ver}", label_visibility="collapsed")
@@ -125,9 +84,8 @@ with tabs[0]:
             if new_j:
                 save_to_gsheet("Journal", [datetime.now().strftime("%d/%m/%Y %H:%M"), new_j])
                 st.session_state.j_ver += 1; st.rerun()
-        for e in reversed(journal_entries):
+        for e in reversed(j_entries):
             st.markdown(f'<div class="post-it" style="background-color: rgba(255,209,220,0.6);"><small>{e.get("Date")}</small><br>{e.get("Texte")}</div>', unsafe_allow_html=True)
-
     with col2:
         st.markdown('<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
         new_g = st.text_area("...", height=150, key=f"g_{st.session_state.g_ver}", label_visibility="collapsed")
@@ -135,7 +93,7 @@ with tabs[0]:
             if new_g:
                 save_to_gsheet("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), new_g])
                 st.session_state.g_ver += 1; st.rerun()
-        for e in reversed(gratitude_entries):
+        for e in reversed(g_entries):
             st.markdown(f'<div class="post-it" style="background-color: white; border-left-color: var(--or);"><small>{e.get("Date")}</small><br><i>{e.get("Texte")}</i></div>', unsafe_allow_html=True)
 
 # --- 🗓️ SEMAINE ---
@@ -145,7 +103,6 @@ with tabs[1]:
     if c_nav[0].button("⬅️"): st.session_state.w_off -= 1; st.rerun()
     if c_nav[2].button("➡️"): st.session_state.w_off += 1; st.rerun()
     c_nav[1].markdown(f'<div class="sous-titre-calli" style="text-align:center;">Semaine {start_week.isocalendar()[1]}</div>', unsafe_allow_html=True)
-    
     cg, cd = st.columns([3, 1.2])
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     with cg:
@@ -157,15 +114,15 @@ with tabs[1]:
                     with cols[k]:
                         st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
                         st.text_area("", height=100, key=f"wk_{d}", label_visibility="collapsed")
-        st.button("💾 Sauvegarder la semaine", key="save_w")
     with cd:
         st.markdown('<div class="p-header" style="background-color:white !important;">🍎 Menu</div>', unsafe_allow_html=True)
         for j in jours: st.text_input(j[:3], key=f"menu_{j}")
-        st.button("💾 Sauver Menu", key="save_m")
 
-# --- 📅 ANNEE ---
+# --- 📅 ANNEE (NOUVELLE INTERACTIVITÉ) ---
 with tabs[2]:
-    st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier 2026</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier Annuel 2026</div>', unsafe_allow_html=True)
+    
+    # Affichage des 12 mois
     mois_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
     for r in range(4):
         cols = st.columns(3)
@@ -176,7 +133,29 @@ with tabs[2]:
                 tc = calendar.TextCalendar(firstweekday=0)
                 cal_str = tc.formatmonth(2026, m_idx)
                 clean_cal = "Lu Ma Me Je Ve Sa Di\n" + "\n".join(cal_str.splitlines()[2:])
-                st.markdown(f'<div style="font-family:\'Courier Prime\'; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center;">{clean_cal}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-family:\'Courier Prime\'; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center; font-size:0.8rem;">{clean_cal}</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    col_add, col_list = st.columns([1, 1])
+    
+    with col_add:
+        st.markdown('<div class="sous-titre-calli">📍 Marquer une date</div>', unsafe_allow_html=True)
+        sel_date = st.date_input("Choisir le jour", value=datetime.now())
+        event_name = st.text_input("Anniversaire ou événement ?")
+        if st.button("➕ Ajouter au calendrier"):
+            if event_name:
+                save_to_gsheet("Evenements", [sel_date.strftime("%d/%m/%Y"), event_name])
+                st.success(f"Événement ajouté pour le {sel_date.strftime('%d/%m')} !"); st.rerun()
+
+    with col_list:
+        st.markdown('<div class="sous-titre-calli">📝 Dates importantes</div>', unsafe_allow_html=True)
+        events = load_from_gsheet("Evenements")
+        if events:
+            # Tri par date (approximatif pour l'affichage)
+            for ev in events:
+                st.markdown(f'<div class="event-card">⭕ **{ev.get("Date")[:5]}** : {ev.get("Evenement")}</div>', unsafe_allow_html=True)
+        else:
+            st.write("Aucune date enregistrée pour le moment.")
 
 # --- 📊 TRACKERS ---
 with tabs[3]:
@@ -187,12 +166,6 @@ with tabs[3]:
         st.date_input("DÉBUT LECTURE", key="bk_d"); st.date_input("FIN LECTURE", key="bk_f")
     with tl2: st.file_uploader("Couverture", type=['jpg','png'], key="bk_img")
     st.slider("NOTE / 10", 1, 10, 5)
-    st.markdown("#### Mon Ressenti")
-    tr1, tr2, tr3, tr4 = st.columns(4)
-    tr1.select_slider("💧 Triste", options=[1,2,3,4,5], key="r1")
-    tr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="r2")
-    tr3.select_slider("🤩 Rire", options=[1,2,3,4,5], key="r3")
-    tr4.select_slider("❤️ Love", options=[1,2,3,4,5], key="r4")
     st.button("💾 ENREGISTRER LECTURE")
 
 # --- 🛒 COURSES ---
@@ -213,4 +186,3 @@ with tabs[4]:
 # --- 🎨 STICKERS ---
 with tabs[5]:
     st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
-    st.write("Section prête pour tes PNG !")
