@@ -56,12 +56,24 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* Correction cases noires iPad */
-    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, textarea, input {
+    /* --- PROTECTION ANTI-CASES NOIRES IPAD --- */
+    /* Force le fond blanc et l'écriture foncée sur TOUS les champs de saisie */
+    input, textarea, [data-baseweb="input"], [data-baseweb="select"] > div {
         background-color: white !important;
-        color: var(--sapin) !important;
+        color: #1B3022 !important; /* Vert sapin très foncé */
         border: 2px solid var(--rose) !important;
         border-radius: 12px !important;
+        -webkit-text-fill-color: #1B3022 !important; /* Force la couleur sur iOS */
+    }
+
+    /* Assure que le texte à l'intérieur des boîtes de sélection est noir */
+    div[data-baseweb="select"] span {
+        color: #1B3022 !important;
+    }
+
+    /* Correction visuelle des onglets pour éviter le texte blanc */
+    button[data-baseweb="tab"] p {
+        color: var(--sapin) !important;
     }
     
     p, label, span, li, div, .stMarkdown { 
@@ -72,9 +84,9 @@ st.markdown("""
     .titre-calli { font-family: 'Dancing Script'; font-size: 3.5rem; color: var(--sapin); text-align: center; }
     .sous-titre-calli { font-family: 'Dancing Script'; font-size: 2.2rem; color: var(--sapin); }
     
-    .card-jour { background: white; border: 2px solid var(--rose); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+    .card-jour { background: white; border: 2px solid var(--rose); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
     .header-jour { background: var(--vert); color: var(--sapin); text-align: center; font-weight: bold; border-radius: 10px; padding: 5px; margin-bottom: 10px; }
-    .sticker-nom { background: var(--vert); color: var(--sapin); border-radius: 20px; padding: 2px 8px; font-weight: bold; border: 1px solid var(--rose); font-size: 0.75rem; text-align: center;}
+    .sticker-nom { background: var(--vert); color: var(--sapin); border-radius: 20px; padding: 2px 8px; font-weight: bold; border: 1px solid var(--rose); font-size: 0.75rem; text-align: center; display: inline-block;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,25 +102,25 @@ with tabs[0]:
     j_data, g_data = load_gs("Journal"), load_gs("Gratitude")
     with c1:
         st.markdown('<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
-        t_j = st.text_area("...", height=150, key="in_j_final", label_visibility="collapsed")
+        t_j = st.text_area("...", height=150, key="in_j_final", label_visibility="collapsed", placeholder="Écris ici...")
         if st.button("💾 Enregistrer pensée", key="btn_j_final"):
             if t_j: save_gs("Journal", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_j]); st.rerun()
         for i, e in enumerate(reversed(j_data)):
             idx = len(j_data) - 1 - i
             txt = e.get("Texte", "")
             if txt and str(txt).lower() != "none":
-                st.markdown(f'<div style="background:white; padding:12px; border-left:8px solid var(--rose); border-radius:10px; margin-bottom:8px;">{txt}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background:white; padding:12px; border-left:8px solid var(--rose); border-radius:10px; margin-bottom:8px; color:black;">{txt}</div>', unsafe_allow_html=True)
                 if st.button("🗑️", key=f"dj_fin_{idx}"): delete_gs("Journal", idx); st.rerun()
     with c2:
         st.markdown('<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
-        t_g = st.text_area("...", height=150, key="in_g_final", label_visibility="collapsed")
+        t_g = st.text_area("...", height=150, key="in_g_final", label_visibility="collapsed", placeholder="Aujourd'hui, je remercie pour...")
         if st.button("🙏 Enregistrer gratitude", key="btn_g_final"):
             if t_g: save_gs("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), t_g]); st.rerun()
         for i, e in enumerate(reversed(g_data)):
             idx_g = len(g_data) - 1 - i
             txt_g = e.get("Texte", "")
             if txt_g and str(txt_g).lower() != "none":
-                st.markdown(f'<div style="background:white; padding:12px; border-left:8px solid var(--or); border-radius:10px; margin-bottom:8px;"><i>{txt_g}</i></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background:white; padding:12px; border-left:8px solid var(--or); border-radius:10px; margin-bottom:8px; color:black;"><i>{txt_g}</i></div>', unsafe_allow_html=True)
                 if st.button("🗑️", key=f"dg_fin_{idx_g}"): delete_gs("Gratitude", idx_g); st.rerun()
 
 # --- 🗓️ SEMAINE ---
@@ -128,7 +140,7 @@ with tabs[1]:
                 if p_in or m_in: save_gs("Semaine", [curr_d, p_in, m_in]); st.rerun()
             for row in s_data:
                 if str(row.get("Date")) == curr_d:
-                    st.markdown(f"<small>• {row.get('Planning')}<br>🍴 {row.get('Menu')}</small>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:black; font-size:0.85rem;'>• {row.get('Planning')}<br>🍴 {row.get('Menu')}</div>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 📅 ANNEE ---
@@ -150,33 +162,33 @@ with tabs[2]:
                         if d == 0: line += "   "
                         else: line += f"{get_circled_num(d)} " if f"{m_idx}-{d}" in marked else f"{d:2} "
                     res += line + "\n"
-                st.markdown(f'<div style="font-family:monospace; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center; font-size:0.8rem;">{res}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-family:monospace; background:white; color:black; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center; font-size:0.8rem;">{res}</div>', unsafe_allow_html=True)
 
-# --- 📊 TRACKERS (LECTURE + SANTÉ + RESPONSABILITÉS) ---
+# --- 📊 TRACKERS ---
 with tabs[3]:
     tr_tabs = st.tabs(["📚 LECTURE", "🩺 SANTÉ", "🏠 RESPONSABILITÉS"])
     
-    with tr_tabs[0]: # Lecture
+    with tr_tabs[0]:
         st.markdown('<div class="sous-titre-calli">📚 Ma Bibliothèque</div>', unsafe_allow_html=True)
         col_l1, col_l2 = st.columns(2)
         with col_l1:
-            st.text_input("Titre", key="read_t_f")
-            st.text_input("Auteur", key="read_a_f")
+            st.text_input("Titre", key="read_t_f", placeholder="Titre du livre")
+            st.text_input("Auteur", key="read_a_f", placeholder="Auteur")
         with col_l2:
             st.slider("Ma Note / 10", 0, 10, 5, key="read_n_f")
         st.button("💾 Sauver Lecture", key="btn_read_final")
 
-    with tr_tabs[1]: # Santé
+    with tr_tabs[1]:
         st.markdown('<div class="sous-titre-calli">🩺 Mon Bien-être</div>', unsafe_allow_html=True)
         ch1, ch2 = st.columns(2)
         with ch1:
             st.selectbox("Humeur", ["Souriante ✨", "Fatiguée 😴", "Stressée 😰", "Besoin de calme 🧘"], key="h_mood_f")
             st.number_input("Verres d'eau 💧", 0, 15, 0, key="h_water_f")
         with ch2:
-            st.text_area("Notes", key="h_notes_f")
+            st.text_area("Notes", key="h_notes_f", placeholder="Comment je me sens ?")
         st.button("💾 Enregistrer Santé", key="btn_h_final")
 
-    with tr_tabs[2]: # Responsabilités (3 Enfants)
+    with tr_tabs[2]:
         st.markdown('<div class="sous-titre-calli">🏠 Missions de la Tribu</div>', unsafe_allow_html=True)
         membres = ["Maman 🌸", "Papa 👔", "Enfant 1 👦", "Enfant 2 👧", "Enfant 3 👶"]
         user_active = st.selectbox("Qui fait la mission ?", membres, key="select_tribe_final")
@@ -184,19 +196,22 @@ with tabs[3]:
         m_data = load_gs("Menage")
         jours_m = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
         
+        # En-tête du tableau
         cols_m = st.columns([2, 1, 1, 1, 1, 1, 1, 1])
         cols_m[0].write("**Missions**")
         for i, j_m in enumerate(jours_m): cols_m[i+1].write(f"**{j_m[:2]}**")
         
+        # Lignes des missions
         for idx_m, row_m in enumerate(m_data):
             cm = st.columns([2, 1, 1, 1, 1, 1, 1, 1])
-            cm[0].write(row_m.get('Tache'))
+            cm[0].markdown(f"<div style='color:black;'>{row_m.get('Tache')}</div>", unsafe_allow_html=True)
             for d_m_idx, j_m_nom in enumerate(jours_m):
                 val = str(row_m.get(j_m_nom, ""))
-                if val == "" or val.lower() == "none":
+                if val == "" or val.lower() == "none" or val.lower() == "0":
                     if cm[d_m_idx+1].button("✨", key=f"fin_m_{idx_m}_{d_m_idx}"):
                         update_gs("Menage", idx_m, d_m_idx + 2, user_active); st.rerun()
                 else:
+                    # On affiche les 2 premières lettres du prénom pour que ça tienne dans la colonne
                     cm[d_m_idx+1].markdown(f"<div class='sticker-nom'>{val[:2]}</div>", unsafe_allow_html=True)
 
 # --- 🛒 COURSES ---
@@ -207,9 +222,11 @@ with tabs[4]:
     for idx, r in enumerate(rapide):
         if cols_r[idx].button(r, key=f"rf_final_{idx}"):
             st.session_state.shopping.append(r); st.rerun()
-    it = st.text_input("Autre chose ?", key="c_add_final")
+    
+    it = st.text_input("Autre chose ?", key="c_add_final", placeholder="Ajouter un article...")
     if st.button("➕ Ajouter", key="btn_c_final"):
         if it: st.session_state.shopping.append(it); st.rerun()
+    
     for i, item in enumerate(st.session_state.shopping):
         ca, cb = st.columns([5, 1])
         ca.checkbox(item, key=f"chf_final_{i}")
@@ -219,3 +236,4 @@ with tabs[4]:
 # --- 🎨 STICKERS ---
 with tabs[5]:
     st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
+    st.write("Section de personnalisation à venir...")
