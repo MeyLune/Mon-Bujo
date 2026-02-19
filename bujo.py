@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import calendar
 
-# --- 1. CONNEXION ---
+# --- 1. CONNEXION (Inchangée) ---
 def init_connection():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
@@ -22,45 +22,49 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. DESIGN GLOBAL (FOND FLEURI & HARMONIE) ---
+# --- 2. DESIGN GLOBAL (FOND MIS À JOUR AVEC "Avec 0.jpg") ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 
-# Ton lien RAW GitHub pour le fond
-fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/58ea26c253d4eb716ab53acff585473a562dc402/fond%201.jpeg"
+# Nouvelle URL pointant vers "Avec 0.jpg"
+fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Indie+Flower&display=swap');
     [data-testid="stSidebar"] {{ display: none; }}
     
-    /* Arrière-plan fleuri */
+    /* Arrière-plan mis à jour */
     .stApp {{
         background-image: url("{fond_url}");
         background-size: cover;
+        background-position: center;
         background-attachment: fixed;
     }}
     
-    /* Blocs blancs translucides pour iPad */
+    /* Blocs blancs translucides optimisés iPad */
     .stTabs, .bujo-block, .p-cell-interactive, .cal-card {{
-        background-color: rgba(255, 255, 255, 0.9) !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
         border-radius: 20px;
         padding: 15px;
         border: 1px solid #c8e6c9;
         margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }}
 
-    h1, h2, h3, p, label, .stMarkdown {{ color: #1b5e20 !important; font-family: 'Comfortaa', cursive; }}
+    h1, h2, h3, p, label, .stMarkdown {{ color: #2e7d32 !important; font-family: 'Comfortaa', cursive; }}
     
-    /* Style des boutons (Texte blanc) */
+    /* Style des boutons */
     .stButton>button {{ 
-        background-color: #1b5e20 !important; 
+        background-color: #2e7d32 !important; 
         border-radius: 25px !important; 
         border: none !important;
         padding: 10px 25px !important;
+        transition: 0.3s;
     }}
+    .stButton>button:hover {{ transform: scale(1.05); }}
     .stButton>button p {{ color: white !important; font-weight: bold !important; }}
 
-    /* En-têtes Semaine & Calendrier (Rose) */
+    /* En-têtes (Rose doux pour s'accorder aux fleurs) */
     .p-header, .cal-card-header {{ 
         background-color: #f06292; 
         color: white !important; 
@@ -71,13 +75,14 @@ st.markdown(f"""
     }}
     
     .cal-card {{ border: 2px solid #f8bbd0; }}
-    .cal-card-body {{ padding: 15px; font-family: monospace; text-align: center; color: #1b5e20; line-height: 1.4; }}
+    .cal-card-body {{ padding: 15px; font-family: monospace; text-align: center; color: #2e7d32; line-height: 1.4; }}
     
     /* Style Post-it */
     .post-it {{ 
         background: rgba(255, 249, 196, 0.95); padding: 20px; border-left: 6px solid #fbc02d; 
-        font-family: 'Indie Flower', cursive; font-size: 1.1rem; color: #5d4037 !important; 
+        font-family: 'Indie Flower', cursive; font-size: 1.2rem; color: #5d4037 !important; 
         border-radius: 5px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -85,13 +90,17 @@ st.markdown(f"""
 # --- 3. LOGIN (CODE PIN) ---
 if "user_data" not in st.session_state: st.session_state.user_data = None
 if not st.session_state.user_data:
-    st.markdown("<h1 style='text-align:center; background:white; padding:20px; border-radius:20px;'>🌿 MeyLune Bujo</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; background:rgba(255,255,255,0.8); padding:20px; border-radius:20px;'>🌿 MeyLune Bujo</h1>", unsafe_allow_html=True)
     _, col_m, _ = st.columns([1, 1, 1])
     with col_m:
         st.markdown('<div class="bujo-block">', unsafe_allow_html=True)
         code = st.text_input("Code secret :", type="password")
         if st.button("Entrer"):
-            if code == "2125": st.session_state.user_data = {"Nom": "MeyLune"}; st.rerun()
+            if code == "2125": 
+                st.session_state.user_data = {"Nom": "MeyLune"}
+                st.rerun()
+            else:
+                st.error("Code incorrect 🌸")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -106,7 +115,7 @@ with tabs[0]:
     st.markdown('<div class="post-it">Écris tes gratitudes ou pensées du jour...</div>', unsafe_allow_html=True)
     note_txt = st.text_area("", placeholder="Cher journal...", height=150, key="j_note", label_visibility="collapsed")
     if st.button("Sauvegarder ma pensée"):
-        if note_txt:
+        if note_txt and sh:
             sh.worksheet("Journal").append_row([datetime.now().strftime("%d/%m/%Y"), note_txt])
             st.success("C'est enregistré ! ✨")
 
@@ -122,8 +131,13 @@ with tabs[1]:
 
     col_g, col_m = st.columns([3, 1])
     with col_g:
-        ws_n = sh.worksheet("Note")
-        df_n = pd.DataFrame(ws_n.get_all_values()[1:], columns=ws_n.get_all_values()[0])
+        try:
+            ws_n = sh.worksheet("Note")
+            data = ws_n.get_all_values()
+            df_n = pd.DataFrame(data[1:], columns=data[0])
+        except:
+            df_n = pd.DataFrame(columns=["Date", "Heure", "Type", "Note"])
+
         days_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
         for i in range(0, 7, 2):
             cols = st.columns(2)
@@ -134,17 +148,17 @@ with tabs[1]:
                     with cols[j]:
                         st.markdown(f'<div class="p-header">{days_fr[i+j]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
                         evts = df_n[df_n.iloc[:, 0] == d_str]
-                        val_init = "\n".join([f"{r.iloc[1]} {r.iloc[3]}" for _, r in evts.iterrows()])
-                        txt_in = st.text_area("Note", value=val_init, height=100, key=f"in_{d_str}", label_visibility="collapsed")
+                        val_init = "\n".join([f"{r.iloc[3]}" for _, r in evts.iterrows()])
+                        txt_in = st.text_area(f"Note_{d_str}", value=val_init, height=100, key=f"in_{d_str}", label_visibility="collapsed")
                         if st.button("Sauver", key=f"sv_{d_str}"):
-                            ws_n.append_row([d_str, datetime.now().strftime("%H:%M"), "Note", txt_in])
+                            sh.worksheet("Note").append_row([d_str, datetime.now().strftime("%H:%M"), "Note", txt_in])
                             st.rerun()
     with col_m:
         st.markdown('<div class="post-it"><b>🍎 Menu Semaine</b></div>', unsafe_allow_html=True)
-        for j in ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]:
-            st.text_input(j, key=f"m_{j}_{st.session_state.w_off}")
+        for jour in ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]:
+            st.text_input(jour, key=f"m_{jour}_{st.session_state.w_off}")
 
-# --- ONGLET 3 : ANNEE 2026 (Cartes Roses) ---
+# --- ONGLET 3 : ANNEE 2026 ---
 with tabs[2]:
     st.markdown("### 📅 Vue Annuelle 2026")
     for r in range(4):
@@ -172,7 +186,9 @@ with tabs[3]:
         st.markdown('</div>', unsafe_allow_html=True)
     with c2:
         st.markdown('<div class="bujo-block">🌿 Bien-être', unsafe_allow_html=True)
-        st.checkbox("Méditation"); st.checkbox("Lecture"); st.checkbox("Sport")
+        st.checkbox("Méditation")
+        st.checkbox("Lecture")
+        st.checkbox("Sport")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- ONGLET 5 : COURSES ---
@@ -180,11 +196,15 @@ with tabs[4]:
     st.markdown("### 🛒 Liste de Courses")
     item = st.text_input("➕ Ajouter article :")
     if st.button("Ajouter"):
-        if item: sh.worksheet("Courses").append_row([item]); st.rerun()
+        if item and sh:
+            sh.worksheet("Courses").append_row([item])
+            st.rerun()
     try:
-        for it in sh.worksheet("Courses").get_all_records():
+        courses = sh.worksheet("Courses").get_all_records()
+        for it in courses:
             st.checkbox(it['Article'], key=f"c_{it['Article']}")
-    except: st.write("Liste de courses vide.")
+    except:
+        st.write("Liste de courses vide.")
 
 # --- ONGLET 6 : STICKERS ---
 with tabs[5]:
