@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 import calendar
 
-# --- 1. CONNEXION GOOGLE SHEETS ---
+# --- 1. CONNEXION ---
 def init_connection():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
@@ -21,6 +21,7 @@ def init_connection():
 
 sh = init_connection()
 
+# Fonctions CRUD (Create, Read, Update, Delete)
 def save_gs(ws_n, row):
     try: sh.worksheet(ws_n).append_row(row)
     except: pass
@@ -37,28 +38,41 @@ def update_gs(ws_n, idx, col, val):
     try: sh.worksheet(ws_n).update_cell(idx + 2, col, val)
     except: pass
 
-# --- 2. LOGIQUE CALENDRIER ENTOURÉ ---
+# --- 2. LOGIQUE VISUELLE CALENDRIER ---
 def get_circled_num(n):
     circled = {i: chr(9311 + i) for i in range(1, 21)}
     circled.update({21: "㉑", 22: "㉒", 23: "㉓", 24: "㉔", 25: "㉕", 26: "㉖", 27: "㉗", 28: "㉘", 29: "㉙", 30: "㉚", 31: "㉛"})
     return circled.get(n, str(n))
 
-# --- 3. DESIGN ---
+# --- 3. DESIGN & POLICES (iPad Optimized) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
-fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
-st.markdown(f"""
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Comfortaa:wght@700&family=Courier+Prime&display=swap');
-    :root {{ --rose: #F48FB1; --sapin: #1B3022; --or: #D4AF37; --vert-pale: #B2DFDB; }}
-    .stApp {{ background: linear-gradient(135deg, rgba(255,209,220,0.7), rgba(178,223,219,0.7)), url("{fond_url}"); background-size: cover; background-attachment: fixed; }}
-    .titre-calli {{ font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important; color: var(--sapin) !important; text-align: center; }}
-    .sous-titre-calli {{ font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important; color: var(--sapin) !important; }}
-    p, label, .stMarkdown, span, div, .stCheckbox {{ font-family: 'Comfortaa', cursive !important; color: var(--sapin) !important; }}
-    textarea, input {{ background-color: white !important; color: var(--sapin) !important; border: 2px solid var(--rose) !important; border-radius: 12px !important; -webkit-text-fill-color: var(--sapin) !important; }}
-    .stButton>button {{ background-color: var(--rose) !important; color: white !important; border-radius: 20px !important; font-weight: bold !important; border: none !important; }}
-    .post-it {{ padding: 12px; border-radius: 15px; margin-bottom: 8px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); border-left: 10px solid var(--rose); background: rgba(255,255,255,0.8); }}
-    .p-header {{ background-color: var(--vert-pale) !important; color: var(--sapin) !important; padding: 5px; text-align: center; border-radius: 10px 10px 0 0; font-weight: bold; border: 1px solid var(--rose); font-size: 0.9rem; }}
+    :root { --rose: #F48FB1; --sapin: #1B3022; --or: #D4AF37; --vert-pale: #B2DFDB; }
+    
+    .stApp { 
+        background-color: white !important;
+        background: linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), 
+                    url("https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg");
+        background-size: cover; background-attachment: fixed;
+    }
+    
+    .titre-calli { font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important; color: var(--sapin) !important; text-align: center; padding: 10px; }
+    .sous-titre-calli { font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important; color: var(--sapin) !important; }
+    
+    p, label, .stMarkdown, span, div, .stCheckbox { font-family: 'Comfortaa' !important; color: var(--sapin) !important; }
+    
+    textarea, input { 
+        background-color: white !important; color: var(--sapin) !important; 
+        border: 2px solid var(--rose) !important; border-radius: 12px !important; 
+    }
+    
+    .stButton>button { background-color: var(--rose) !important; color: white !important; border-radius: 20px !important; font-weight: bold; border: none; }
+    
+    .post-it { padding: 12px; border-radius: 15px; margin-bottom: 8px; border-left: 10px solid var(--rose); background: rgba(255,255,255,0.9); box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .p-header { background-color: var(--vert-pale) !important; color: var(--sapin) !important; padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; border: 1px solid var(--rose); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,13 +96,13 @@ tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKER
 
 # --- ✍️ JOURNAL ---
 with tabs[0]:
-    col1, col2 = st.columns(2)
+    c1, c2 = st.columns(2)
     j_data = load_gs("Journal")
     g_data = load_gs("Gratitude")
-    with col1:
+    with c1:
         st.markdown('<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
-        txt_j = st.text_area("...", value=st.session_state.j_val, height=150, key="in_j", label_visibility="collapsed")
-        if st.button("💾 Enregistrer"):
+        txt_j = st.text_area("...", value=st.session_state.j_val, height=180, key="txt_journal", label_visibility="collapsed")
+        if st.button("💾 Enregistrer pensée"):
             if txt_j:
                 if st.session_state.j_edit is not None: update_gs("Journal", st.session_state.j_edit, 2, txt_j); st.session_state.j_edit = None; st.session_state.j_val = ""
                 else: save_gs("Journal", [datetime.now().strftime("%d/%m/%Y %H:%M"), txt_j])
@@ -96,50 +110,53 @@ with tabs[0]:
         for i, e in enumerate(reversed(j_data)):
             idx = len(j_data) - 1 - i
             st.markdown(f'<div class="post-it"><small>{e.get("Date")}</small><br>{e.get("Texte")}</div>', unsafe_allow_html=True)
-            b1, b2 = st.columns(2)
-            if b1.button("✏️", key=f"ej_{idx}"): st.session_state.j_edit = idx; st.session_state.j_val = e.get("Texte"); st.rerun()
-            if b2.button("🗑️", key=f"dj_{idx}"): delete_gs("Journal", idx); st.rerun()
-    with col2:
+            colb1, colb2 = st.columns(2)
+            if colb1.button("✏️", key=f"ej_{idx}"): st.session_state.j_edit = idx; st.session_state.j_val = e.get("Texte"); st.rerun()
+            if colb2.button("🗑️", key=f"dj_{idx}"): delete_gs("Journal", idx); st.rerun()
+    with c2:
         st.markdown('<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
-        txt_g = st.text_area("...", height=150, key="in_g", label_visibility="collapsed")
-        if st.button("🙏 Enregistrer Gratitude"):
+        txt_g = st.text_area("...", height=180, key="txt_grat", label_visibility="collapsed")
+        if st.button("🙏 Enregistrer gratitude"):
             if txt_g: save_gs("Gratitude", [datetime.now().strftime("%d/%m/%Y %H:%M"), txt_g]); st.rerun()
         for i, e in enumerate(reversed(g_data)):
             idx_g = len(g_data) - 1 - i
-            st.markdown(f'<div class="post-it" style="border-left-color:var(--or); background:white;"><i>{e.get("Texte")}</i></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="post-it" style="border-left-color:var(--or);"><i>{e.get("Texte")}</i></div>', unsafe_allow_html=True)
             if st.button("🗑️", key=f"dg_{idx_g}"): delete_gs("Gratitude", idx_g); st.rerun()
 
-# --- 🗓️ SEMAINE (PLANNING + MENU DESSOUS) ---
+# --- 🗓️ SEMAINE (Espace Planning Amélioré) ---
 with tabs[1]:
     start = datetime.now().date() - timedelta(days=datetime.now().weekday())
-    end = start + timedelta(days=6)
     st.markdown(f'<div class="sous-titre-calli" style="text-align:center;">Semaine {start.isocalendar()[1]}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="text-align:center;">Du {start.strftime("%d/%m")} au {end.strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;">Du {start.strftime("%d/%m")} au {(start+timedelta(days=6)).strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
     
-    st.markdown("### 📝 Mon Planning")
+    st.markdown("### 📝 Planning Hebdomadaire")
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-    cols_p = st.columns(7)
+    # 2 lignes pour plus de largeur sur iPad
+    r1 = st.columns(4)
+    r2 = st.columns(4)
+    all_c = r1 + r2
     for i, j in enumerate(jours):
         d_p = start + timedelta(days=i)
-        with cols_p[i]:
-            st.markdown(f'<div class="p-header">{j[:3]} {d_p.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-            st.text_area("", key=f"p_{i}", height=150, label_visibility="collapsed")
-
+        with all_c[i]:
+            st.markdown(f'<div class="p-header">{j} {d_p.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+            st.text_area("", key=f"plan_{i}", height=200, label_visibility="collapsed")
+    
     st.markdown("---")
-    st.markdown("### 🍎 Mes Menus")
+    st.markdown("### 🍎 Menus")
     cols_m = st.columns(7)
     for i, j in enumerate(jours):
         with cols_m[i]:
-            st.markdown(f'<div class="p-header" style="background:white!important;">{j[:3]}</div>', unsafe_allow_html=True)
-            st.text_input("Matin", key=f"mm_{i}", label_visibility="collapsed", placeholder="Matin")
-            st.text_input("Midi", key=f"mi_{i}", label_visibility="collapsed", placeholder="Midi")
-            st.text_input("Soir", key=f"ms_{i}", label_visibility="collapsed", placeholder="Soir")
+            st.markdown(f'<div class="p-header" style="background:white!important; font-size:0.7rem;">{j[:3]}</div>', unsafe_allow_html=True)
+            st.text_input("M", key=f"m1_{i}", placeholder="Matin", label_visibility="collapsed")
+            st.text_input("D", key=f"m2_{i}", placeholder="Midi", label_visibility="collapsed")
+            st.text_input("S", key=f"m3_{i}", placeholder="Soir", label_visibility="collapsed")
 
 # --- 📅 ANNEE ---
 with tabs[2]:
-    st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier 2026</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier Annuel 2026</div>', unsafe_allow_html=True)
     evs = load_gs("Evenements")
-    marked = {f"{datetime.strptime(e['Date'], '%d/%m/%Y').month}-{datetime.strptime(e['Date'], '%d/%m/%Y').day}": e['Evenement'] for e in evs if e.get('Date')}
+    marked = {f"{datetime.strptime(str(e['Date']), '%d/%m/%Y').month}-{datetime.strptime(str(e['Date']), '%d/%m/%Y').day}": e['Evenement'] for e in evs if e.get('Date')}
+    
     for r in range(4):
         cols = st.columns(3)
         for c in range(3):
@@ -157,49 +174,50 @@ with tabs[2]:
                     res += line + "\n"
                 st.markdown(f'<div style="font-family:\'Courier Prime\'; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center; font-size:0.8rem;">{res}</div>', unsafe_allow_html=True)
     st.markdown("---")
-    c1, c2 = st.columns(2)
-    with c1:
-        sd = st.date_input("Date"); en = st.text_input("Événement")
+    ca, cl = st.columns(2)
+    with ca:
+        sd = st.date_input("Date importante", key="date_imp")
+        en = st.text_input("Événement", key="ev_imp")
         if st.button("📍 Marquer"): save_gs("Evenements", [sd.strftime("%d/%m/%Y"), en]); st.rerun()
-    with c2:
+    with cl:
         for i, ev in enumerate(evs):
             ctx, cbt = st.columns([4,1])
             ctx.write(f"⭕ {ev.get('Date')} : {ev.get('Evenement')}")
-            if cbt.button("🗑️", key=f"de_{i}"): delete_gs("Evenements", i); st.rerun()
+            if cbt.button("🗑️", key=f"dev_{i}"): delete_gs("Evenements", i); st.rerun()
 
-# --- 📊 TRACKERS (LECTURE & SANTE) ---
+# --- 📊 TRACKERS ---
 with tabs[3]:
-    st_tabs = st.tabs(["📚 LECTURE", "🩺 SANTÉ"])
-    with st_tabs[0]:
+    tr_tabs = st.tabs(["📚 LECTURE", "🩺 SANTÉ"])
+    with tr_tabs[0]:
         cl1, cl2 = st.columns([2, 1])
         with cl1:
-            st.text_input("Livre"); st.text_input("Auteur")
-            st.date_input("Début", key="d1"); st.date_input("Fin", key="d2")
-        with cl2: st.file_uploader("Couverture")
-        st.slider("Note / 10", 1, 10, 5)
+            st.text_input("Titre du livre", key="bk_t"); st.text_input("Auteur", key="bk_a")
+            st.date_input("Début", key="bk_d"); st.date_input("Fin", key="bk_f")
+        with cl2: st.file_uploader("Couverture", key="bk_img")
+        st.slider("Note / 10", 1, 10, 5, key="bk_n")
         st.markdown("#### Ressenti")
         r1, r2, r3, r4 = st.columns(4)
-        r1.select_slider("💧 Triste", options=[1,2,3,4,5])
-        r2.select_slider("🌶️ Spicy", options=[1,2,3,4,5])
-        r3.select_slider("🤩 Rire", options=[1,2,3,4,5])
-        r4.select_slider("❤️ Love", options=[1,2,3,4,5])
-        st.button("💾 Sauver Lecture")
-    with st_tabs[1]:
-        st.markdown('<div class="sous-titre-calli">🩺 Mon Suivi</div>', unsafe_allow_html=True)
-        st.date_input("Date")
-        st.multiselect("État", ["Forme ✨", "Fatigue 😴", "Douleurs 🤕", "Stress 😰"])
-        st.text_area("Observations")
-        st.button("💾 Sauver Santé")
+        r1.select_slider("💧 Triste", options=[1,2,3,4,5], key="r1")
+        r2.select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="r2")
+        r3.select_slider("🤩 Rire", options=[1,2,3,4,5], key="r3")
+        r4.select_slider("❤️ Love", options=[1,2,3,4,5], key="r4")
+        st.button("💾 Sauver Lecture", key="btn_bk")
+    with tr_tabs[1]:
+        st.markdown('<div class="sous-titre-calli">🩺 Suivi Santé</div>', unsafe_allow_html=True)
+        st.date_input("Date", key="h_date")
+        st.multiselect("État général", ["Forme ✨", "Fatigue 😴", "Douleurs 🤕", "Stress 😰"], key="h_etat")
+        st.text_area("Notes / Sommeil / Traitement", key="h_notes")
+        st.button("💾 Sauver Santé", key="btn_h")
 
 # --- 🛒 COURSES ---
 with tabs[4]:
-    st.markdown('<div class="sous-titre-calli">🛒 Liste</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sous-titre-calli">🛒 Liste de Courses</div>', unsafe_allow_html=True)
     rapide = ["🍞 Pain", "🥛 Lait", "🍎 Fruits", "🍝 Pâtes", "🥚 Œufs"]
     cols_r = st.columns(len(rapide))
     for idx, r in enumerate(rapide):
-        if cols_r[idx].button(r): st.session_state.shopping.append(r); st.rerun()
-    it = st.text_input("Ajouter...")
-    if st.button("➕"):
+        if cols_r[idx].button(r, key=f"rap_{idx}"): st.session_state.shopping.append(r); st.rerun()
+    it = st.text_input("Ajouter un article...", key="c_add")
+    if st.button("➕ Ajouter", key="c_btn"):
         if it: st.session_state.shopping.append(it); st.rerun()
     for i, item in enumerate(st.session_state.shopping):
         ca, cb = st.columns([4, 1])
@@ -208,4 +226,5 @@ with tabs[4]:
 
 # --- 🎨 STICKERS ---
 with tabs[5]:
-    st.markdown('<div class="sous-titre-calli">🎨 Stickers</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
+    st.info("Espace prêt pour tes futurs stickers !")
