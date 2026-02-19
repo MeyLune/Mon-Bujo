@@ -1,8 +1,27 @@
 import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 import calendar
 
-# --- 1. CONFIGURATION & DESIGN (FIX IPAD) ---
+# --- 1. CONNEXION ---
+def init_connection():
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    try:
+        creds_info = {
+            "type": "service_account",
+            "project_id": "airy-semiotics-486311-v5",
+            "private_key": st.secrets["MY_PRIVATE_KEY"],
+            "client_email": st.secrets["MY_CLIENT_EMAIL"],
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+        creds = Credentials.from_service_account_info(creds_info, scopes=scope)
+        return gspread.authorize(creds).open("db_bujo")
+    except: return None
+
+sh = init_connection()
+
+# --- 2. DESIGN : CALLIGRAPHIE, POST-ITS & ANTI-NOIR ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
@@ -12,138 +31,220 @@ st.markdown(f"""
     
     :root {{
         --rose: #F48FB1;
+        --rose-pale: rgba(255, 209, 220, 0.6);
+        --vert-pale: rgba(178, 223, 219, 0.6);
         --sapin: #1B3022;
-        --or: #D4AF37;
-        --vert-doux: #B2DFDB;
     }}
 
     .stApp {{
         background: linear-gradient(135deg, rgba(255, 209, 220, 0.7), rgba(178, 223, 219, 0.7)), url("{fond_url}");
-        background-size: cover; background-attachment: fixed; background-color: white !important;
+        background-size: cover;
+        background-attachment: fixed;
+        background-color: white !important;
     }}
 
-    /* TITRES */
+    /* TITRES CALLIGRAPHIÉS (Dancing Script) */
     .titre-calli {{
-        font-family: 'Dancing Script', cursive !important; font-size: 3.5rem !important;
-        color: var(--sapin) !important; text-align: center; margin-bottom: 10px;
-    }}
-    .sous-titre-calli {{
-        font-family: 'Dancing Script', cursive !important; font-size: 2.2rem !important;
-        color: var(--sapin) !important; margin-bottom: 15px;
-    }}
-
-    /* FIX COULEURS IPAD & BLOC NOIR */
-    textarea, input, div[data-baseweb="base-input"], div[data-baseweb="textarea"] {{
-        background-color: white !important; color: var(--sapin) !important;
+        font-family: 'Dancing Script', cursive !important;
+        font-size: 3.5rem !important;
+        color: var(--sapin) !important;
+        text-align: center;
         -webkit-text-fill-color: var(--sapin) !important;
-        border: 2px solid var(--rose) !important; border-radius: 12px !important;
     }}
-
-    .stButton>button {{
-        background-color: var(--rose) !important; color: white !important;
-        border-radius: 20px !important; font-weight: bold !important; border: none !important;
-    }}
-
-    .post-it {{ padding: 15px; border-radius: 15px; margin-bottom: 10px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }}
     
+    .sous-titre-calli {{
+        font-family: 'Dancing Script', cursive !important;
+        font-size: 2.2rem !important;
+        color: var(--sapin) !important;
+        -webkit-text-fill-color: var(--sapin) !important;
+        margin-bottom: 15px;
+    }}
+
+    /* TEXTE ET INPUTS */
+    p, label, .stMarkdown, span, div {{
+        font-family: 'Comfortaa', cursive !important;
+        color: var(--sapin) !important;
+        -webkit-text-fill-color: var(--sapin) !important;
+    }}
+
+    textarea, input, div[data-baseweb="base-input"], div[data-baseweb="textarea"], div[data-baseweb="select"], div[data-testid="stFileUploadDropzone"] {{
+        background-color: white !important;
+        color: var(--sapin) !important;
+        -webkit-text-fill-color: var(--sapin) !important;
+        border: 2px solid var(--rose) !important;
+        border-radius: 12px !important;
+    }}
+
+    /* BOUTONS ROSES */
+    .stButton>button {{
+        background-color: var(--rose) !important;
+        color: white !important;
+        -webkit-text-fill-color: white !important;
+        border-radius: 20px !important;
+        font-weight: bold !important;
+        border: none !important;
+    }}
+
+    /* STYLE POST-IT */
+    .post-it {{
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 5px;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
+        font-family: 'Comfortaa', cursive !important;
+    }}
+
     .p-header {{ 
-        background-color: var(--vert-doux) !important; color: var(--sapin) !important;
-        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; border: 1px solid var(--rose);
+        background-color: #B2DFDB !important; 
+        color: var(--sapin) !important;
+        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; 
+        font-weight: bold; border: 1px solid var(--rose);
     }}
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. INITIALISATION DES ETATS (POUR EVITER LES ERREURS) ---
-for key in ['list_pensees', 'list_gratitudes', 'shopping_list', 'p_ver', 'g_ver', 'edit_p', 'edit_g']:
-    if key not in st.session_state:
-        if 'list' in key: st.session_state[key] = []
-        elif 'ver' in key: st.session_state[key] = 0
-        else: st.session_state[key] = ""
-
-# --- 3. LOGIN ---
-if "user_logged" not in st.session_state: st.session_state.user_logged = False
-if not st.session_state.user_logged:
+# --- 3. LOGIN & TITRE ---
+if "user_data" not in st.session_state: st.session_state.user_data = None
+if not st.session_state.user_data:
     st.markdown('<div class="titre-calli">🌸 Mon Univers Quotidien</div>', unsafe_allow_html=True)
     _, col_m, _ = st.columns([1, 1.2, 1])
     with col_m:
         code = st.text_input("Code secret :", type="password")
         if st.button("Ouvrir mon journal") or code == "2125":
-            st.session_state.user_logged = True
+            st.session_state.user_data = {"Nom": "MeyLune"}
             st.rerun()
     st.stop()
 
 st.markdown('<div class="titre-calli">🌸 Mon Univers Quotidien</div>', unsafe_allow_html=True)
 tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES", "🎨 STICKERS"])
 
-# --- ✍️ JOURNAL ---
+# --- ONGLET JOURNAL ---
 with tabs[0]:
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown(f'<div class="sous-titre-calli">🖋️ Mes pensées</div>', unsafe_allow_html=True)
-        txt_p = st.text_area("...", value=st.session_state.edit_p, height=120, key=f"p_in_{st.session_state.p_ver}", label_visibility="collapsed")
-        if st.button("💾 Enregistrer la pensée"):
-            if txt_p:
-                st.session_state.list_pensees.insert(0, {"t": txt_p, "h": datetime.now().strftime("%H:%M")})
-                st.session_state.p_ver += 1; st.session_state.edit_p = ""; st.rerun()
-        for idx, e in enumerate(st.session_state.list_pensees):
-            st.markdown(f'<div class="post-it" style="background:rgba(255,209,220,0.6); border-left:8px solid var(--rose);">{e["t"]}</div>', unsafe_allow_html=True)
-            if st.button("Modifier", key=f"mp_{idx}"):
-                st.session_state.edit_p = e["t"]; st.session_state.list_pensees.pop(idx); st.rerun()
-    with c2:
-        st.markdown(f'<div class="sous-titre-calli">✨ Gratitude</div>', unsafe_allow_html=True)
-        txt_g = st.text_area("...", value=st.session_state.edit_g, height=120, key=f"g_in_{st.session_state.g_ver}", label_visibility="collapsed")
-        if st.button("🙏 Enregistrer"):
-            if txt_g:
-                st.session_state.list_gratitudes.insert(0, {"t": txt_g, "h": datetime.now().strftime("%H:%M")})
-                st.session_state.g_ver += 1; st.session_state.edit_g = ""; st.rerun()
-        for idx, e in enumerate(st.session_state.list_gratitudes):
-            st.markdown(f'<div class="post-it" style="background:white; border-left:8px solid var(--or);"><i>{e["t"]}</i></div>', unsafe_allow_html=True)
-            if st.button("Modifier", key=f"mg_{idx}"):
-                st.session_state.edit_g = e["t"]; st.session_state.list_gratitudes.pop(idx); st.rerun()
+    st.markdown(f'<div class="sous-titre-calli">🖋️ Mes pensées du {datetime.now().strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
+    
+    # Saisie
+    new_thought = st.text_area("Libère ton esprit...", height=150, key="input_journal", label_visibility="collapsed")
+    if st.button("💾 Enregistrer la pensée"):
+        if new_thought:
+            if 'temp_journal' not in st.session_state: st.session_state.temp_journal = []
+            st.session_state.temp_journal.insert(0, {"text": new_thought, "date": datetime.now().strftime("%H:%M")})
+            st.rerun()
 
-# --- 🗓️ SEMAINE ---
+    st.markdown("---")
+    
+    # Affichage Post-its
+    if 'temp_journal' in st.session_state:
+        for idx, entry in enumerate(st.session_state.temp_journal):
+            bg = "rgba(255, 209, 220, 0.6)" if idx % 2 == 0 else "rgba(178, 223, 219, 0.6)"
+            border = "#F48FB1" if idx % 2 == 0 else "#80CBC4"
+            
+            st.markdown(f"""
+                <div class="post-it" style="background-color: {bg}; border-left: 10px solid {border};">
+                    <small style="color: grey;">{entry['date']}</small><br>
+                    {entry['text']}
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Petit bouton modifier
+            c_mod, _ = st.columns([1, 5])
+            if c_mod.button("Modifier", key=f"mod_{idx}"):
+                st.toast("Mode édition activé")
+
+# --- ONGLET SEMAINE ---
 with tabs[1]:
-    start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday()))
-    st.markdown(f'<div class="sous-titre-calli" style="text-align:center;">Semaine {start_week.isocalendar()[1]}</div>', unsafe_allow_html=True)
+    if 'w_off' not in st.session_state: st.session_state.w_off = 0
+    start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
+    
+    col_nav = st.columns([1, 3, 1])
+    if col_nav[0].button("⬅️"): st.session_state.w_off -= 1; st.rerun()
+    if col_nav[2].button("➡️"): st.session_state.w_off += 1; st.rerun()
+    
+    col_nav[1].markdown(f'<div class="sous-titre-calli" style="text-align:center;">Semaine {start_week.isocalendar()[1]} - 2026</div>', unsafe_allow_html=True)
+
+    col_g, col_d = st.columns([3, 1.2])
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-    cg, cd = st.columns([3, 1])
-    with cg:
-        for j in jours:
-            st.markdown(f'<div class="p-header">{j}</div>', unsafe_allow_html=True)
-            st.text_area("", height=60, key=f"note_{j}", label_visibility="collapsed")
-    with cd:
-        st.markdown('<div class="p-header">🍎 Menu</div>', unsafe_allow_html=True)
-        for j in jours: st.text_input(j[:2], key=f"menu_{j}")
+    with col_g:
+        for i in range(0, 7, 2):
+            cols = st.columns(2)
+            for k in range(2):
+                if (i+k) < 7:
+                    d = start_week + timedelta(days=i+k)
+                    with cols[k]:
+                        st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+                        st.text_area("", height=100, key=f"wk_{d}", label_visibility="collapsed")
+        cs1, cs2 = st.columns(2)
+        cs1.button("💾 Sauvegarder la semaine", key="save_wk")
+        cs2.button("📝 Modifier la semaine", key="mod_wk")
 
-# --- 📅 ANNEE ---
+    with col_d:
+        st.markdown('<div class="p-header" style="background-color:white !important; border-bottom:none;">🍎 Menu</div>', unsafe_allow_html=True)
+        for j in jours: st.text_input(j[:3], key=f"menu_{j}")
+        cm1, cm2 = st.columns(2)
+        cm1.button("💾 Sauver Menu", key="s_menu")
+        cm2.button("📝 Modifier Menu", key="m_menu")
+
+# --- ONGLET ANNEE ---
 with tabs[2]:
-    st.markdown('<div class="sous-titre-calli" style="text-align:center;">2026</div>', unsafe_allow_html=True)
-    # Rendu ultra-simple pour éviter bug Safari
-    cols = st.columns(3)
-    for m in range(1, 13):
-        with cols[(m-1)%3]:
-            st.markdown(f'<div class="p-header">{calendar.month_name[m]}</div>', unsafe_allow_html=True)
-            st.write(calendar.month(2026, m))
+    st.markdown('<div class="sous-titre-calli" style="text-align:center;">Calendrier Annuel 2026</div>', unsafe_allow_html=True)
+    mois_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+    for r in range(4):
+        cols = st.columns(3)
+        for c in range(3):
+            m_idx = r * 3 + c + 1
+            with cols[c]:
+                tc = calendar.TextCalendar(firstweekday=0)
+                cal_str = tc.formatmonth(2026, m_idx)
+                clean_cal = "Lu Ma Me Je Ve Sa Di\n" + "\n".join(cal_str.splitlines()[2:])
+                st.markdown(f'<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">{mois_fr[m_idx-1].upper()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-family:\'Courier Prime\'; background:white; padding:10px; border:1px solid var(--rose); border-radius:0 0 12px 12px; white-space:pre; text-align:center;">{clean_cal}</div>', unsafe_allow_html=True)
 
-# --- 🛒 COURSES ---
+# --- ONGLET TRACKERS ---
+with tabs[3]:
+    st.markdown('<div class="sous-titre-calli">📚 Ma Fiche de Lecture</div>', unsafe_allow_html=True)
+    col_l1, col_l2 = st.columns([2, 1])
+    with col_l1:
+        st.text_input("TITRE DU LIVRE")
+        st.text_input("AUTEUR")
+        st.date_input("DÉBUT")
+        st.date_input("FINI")
+    with col_l2:
+        st.file_uploader("Prendre une photo", type=['jpg','png','jpeg'], key="up_f")
+    
+    st.slider("NOTE / 10", 1, 10, 5)
+    st.markdown("#### 🎭 Ressenti")
+    cr1, cr2, cr3, cr4 = st.columns(4)
+    cr1.select_slider("💧 Triste", options=[1,2,3,4,5])
+    cr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5])
+    cr3.select_slider("🤩 Rire", options=[1,2,3,4,5])
+    cr4.select_slider("❤️ Love", options=[1,2,3,4,5])
+    
+    st.multiselect("Sentiments", ["Coup de cœur ❤️", "À lire absolument", "Triste 😭", "Incontournable", "Décevant"])
+    st.text_area("🎵 Playlist & Citations")
+    st.button("💾 ENREGISTRER DANS LA BIBLIOTHÈQUE")
+
+# --- ONGLET COURSES ---
 with tabs[4]:
     st.markdown('<div class="sous-titre-calli">🛒 Liste de Courses</div>', unsafe_allow_html=True)
-    cl, cr = st.columns([2, 1])
-    with cl:
-        item = st.text_input("Nouvel article :", key="course_in")
-        if st.button("➕ Ajouter") and item:
-            st.session_state.shopping_list.append(item); st.rerun()
-        rapides = ["Lait", "Pain", "Oeufs", "Fruits"]
-        for r in rapides:
-            if st.button(f"Ajouter {r}"): st.session_state.shopping_list.append(r); st.rerun()
-    with cr:
-        st.markdown('<div class="p-header" style="background:var(--rose)!important; color:white!important;">Ma Liste</div>', unsafe_allow_html=True)
-        for i, it in enumerate(st.session_state.shopping_list):
-            st.write(f"• {it}")
-        if st.button("🗑️ Vider tout"): st.session_state.shopping_list = []; st.rerun()
+    c_l, c_r = st.columns([2, 1])
+    with c_l:
+        st.date_input("Date prévue", value=datetime.now())
+        st.text_input("➕ Ajouter un article")
+        st.button("Valider la liste")
+    with c_r:
+        st.markdown('<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">📅 Rappel Semaine</div>', unsafe_allow_html=True)
+        for j in jours:
+            st.markdown(f"**{j}** : {st.session_state.get(f'menu_{j}', '...')}")
 
-# --- 🎨 STICKERS ---
+# --- ONGLET STICKERS ---
 with tabs[5]:
-    st.markdown('<div class="sous-titre-calli">🎨 Stickers</div>', unsafe_allow_html=True)
-    up = st.file_uploader("Upload", type=['png', 'jpg'])
-    if up: st.image(up, width=100)
+    st.markdown('<div class="sous-titre-calli">🎨 Mes Stickers</div>', unsafe_allow_html=True)
+    up = st.file_uploader("Upload", type=['png', 'jpg'], key="up_s")
+    if up and st.button("Ajouter"):
+        if 'stk_perso' not in st.session_state: st.session_state.stk_perso = []
+        st.session_state.stk_perso.append(up)
+    
+    if 'stk_perso' in st.session_state:
+        cols_s = st.columns(5)
+        for idx, s in enumerate(st.session_state.stk_perso):
+            with cols_s[idx % 5]:
+                st.image(s, width=80)
