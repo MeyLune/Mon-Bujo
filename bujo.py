@@ -22,7 +22,7 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. DESIGN : ROSE PASTEL & VERT SAPIN (LISIBILITÉ MAX) ---
+# --- 2. SUPER DESIGN (Rose & Sapin) ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
@@ -31,53 +31,52 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Courier+Prime&display=swap');
     
     .stApp {{
-        background: linear-gradient(to bottom, rgba(255, 228, 230, 0.85), rgba(255, 255, 255, 0.95)), url("{fond_url}");
+        background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), url("{fond_url}");
         background-size: cover;
         background-attachment: fixed;
     }}
 
-    /* TEXTE VERT SAPIN FONCÉ */
-    h1, h2, h3, p, label, .stMarkdown {{ 
-        color: #1b3022 !important; 
-        font-family: 'Comfortaa', cursive;
-        font-weight: 700 !important;
+    /* Boutons Roses */
+    .stButton>button {{
+        background-color: #f06292 !important;
+        color: white !important;
+        border-radius: 20px !important;
+        border: none !important;
+        padding: 10px 20px !important;
+        font-weight: bold !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }}
 
-    /* INPUTS BLANCS OPAQUES */
-    div[data-baseweb="textarea"], div[data-baseweb="input"], 
-    .stTextArea textarea, .stTextInput input {{
+    /* Zones de texte blanches */
+    div[data-baseweb="textarea"], div[data-baseweb="input"], .stTextArea textarea, .stTextInput input {{
         background-color: white !important;
         color: #1b3022 !important;
         -webkit-text-fill-color: #1b3022 !important;
-        border: 2px solid #1b3022 !important;
-        border-radius: 12px !important;
+        border-radius: 15px !important;
+        border: 2px solid #f06292 !important;
     }}
 
-    .stTabs {{ background-color: rgba(255, 255, 255, 0.8) !important; border-radius: 20px; padding: 15px; }}
+    /* En-têtes et Titres Vert Sapin */
+    h1, h2, h3, label {{ 
+        color: #1b3022 !important; 
+        font-family: 'Comfortaa', cursive; 
+    }}
 
-    /* EN-TÊTES ROSES */
     .p-header {{ 
         background-color: #f06292 !important; 
         color: white !important; 
-        padding: 8px; text-align: center; border-radius: 10px 10px 0 0; font-weight: bold; 
+        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold;
     }}
 
-    /* CALENDRIER ALIGNÉ */
     .cal-box {{
         font-family: 'Courier Prime', monospace !important;
-        background-color: white;
-        padding: 10px; border-radius: 0 0 10px 10px;
-        line-height: 1.4; font-size: 16px !important;
-        color: #1b3022 !important;
+        background-color: white; padding: 15px; border-radius: 0 0 12px 12px;
+        color: #1b3022 !important; font-size: 16px !important;
         white-space: pre; display: flex; justify-content: center;
-        border: 1px solid #1b3022;
+        border: 1px solid #f06292;
     }}
 
-    .lecture-card {{
-        background-color: #fdf5e6 !important;
-        border: 2px solid #d2b48c !important;
-        border-radius: 15px; padding: 20px;
-    }}
+    .stTabs {{ background-color: rgba(255, 255, 255, 0.7) !important; border-radius: 20px; padding: 10px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -91,15 +90,14 @@ if not st.session_state.user_data:
         st.rerun()
     st.stop()
 
-# --- 4. NAVIGATION DES ONGLETS ---
 user_nom = st.session_state.user_data['Nom']
 tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKERS", "🛒 COURSES", "🎨 STICKERS"])
 
 # --- JOURNAL ---
 with tabs[0]:
-    st.markdown(f"### 🖋️ Journal du {datetime.now().strftime('%d/%m/%Y')}")
-    note_j = st.text_area("Note du jour", height=300, label_visibility="collapsed")
-    if st.button("💾 Enregistrer dans le Sheet"):
+    st.markdown(f"### 🖋️ Mon Journal - {datetime.now().strftime('%d/%m/%Y')}")
+    note_j = st.text_area("Aujourd'hui...", height=300, label_visibility="collapsed")
+    if st.button("💾 Enregistrer la pensée"):
         if sh: sh.worksheet("Journal").append_row([datetime.now().strftime("%d/%m/%Y"), user_nom, note_j])
         st.success("Pensée sauvegardée ! ✨")
 
@@ -109,29 +107,28 @@ with tabs[1]:
     start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
     mois_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
     
-    col_n1, col_n2, col_n3 = st.columns([1, 2, 1])
-    if col_n1.button("⬅️"): st.session_state.w_off -= 1; st.rerun()
-    if col_n3.button("➡️"): st.session_state.w_off += 1; st.rerun()
-    col_n2.markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]} - {mois_fr[start_week.month-1]}</h3>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 2, 1])
+    if c1.button("⬅️ Précédente"): st.session_state.w_off -= 1; st.rerun()
+    if c3.button("Suivante ➡️"): st.session_state.w_off += 1; st.rerun()
+    c2.markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]} - {mois_fr[start_week.month-1]}</h3>", unsafe_allow_html=True)
 
-    col_left, col_right = st.columns([3, 1.2])
+    col_g, col_d = st.columns([3, 1.2])
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-    with col_left:
+    with col_g:
         for i in range(0, 7, 2):
-            c_s = st.columns(2)
+            cols = st.columns(2)
             for k in range(2):
                 if (i+k) < 7:
                     d = start_week + timedelta(days=i+k)
-                    with c_s[k]:
+                    with cols[k]:
                         st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-                        st.text_area("Txt", height=100, key=f"s_{d}", label_visibility="collapsed")
-    with col_right:
-        st.markdown('<div style="background:#fff9c4; padding:10px; border-radius:10px; border-left:5px solid #fbc02d; color:#5d4037;">🍎 <b>Menu</b></div>', unsafe_allow_html=True)
+                        st.text_area("Note", height=100, key=f"note_{d}")
+    with col_d:
+        st.markdown('<div style="background:#fff9c4; padding:15px; border-radius:10px; border-left:5px solid #fbc02d; color:#5d4037;">🍎 <b>Menu</b></div>', unsafe_allow_html=True)
         [st.text_input(j[:3], key=f"menu_{j}") for j in jours]
 
 # --- ANNEE ---
 with tabs[2]:
-    st.markdown("<h2 style='text-align:center;'>Calendrier 2026</h2>", unsafe_allow_html=True)
     for r in range(4):
         cols = st.columns(3)
         for c in range(3):
@@ -145,41 +142,42 @@ with tabs[2]:
 
 # --- TRACKERS & LECTURE ---
 with tabs[3]:
-    sub_cat = st.radio("Mode", ["🌿 Santé", "📖 Lecture"], horizontal=True)
-    if sub_cat == "📖 Lecture":
-        st.markdown('<div class="lecture-card">', unsafe_allow_html=True)
-        st.markdown("### 📖 Ma Fiche de Lecture")
-        fl1, fl2 = st.columns([2, 1])
-        with fl1:
-            t_liv = st.text_input("TITRE")
-            a_liv = st.text_input("AUTEUR")
-            st.select_slider("NOTE / 10", options=list(range(1, 11)))
-        with fl2:
-            img = st.file_uploader("📸 Photo", type=['jpg','png','jpeg'])
-            if img: st.image(img, width=150)
-        
-        st.markdown("---")
-        cs1, cs2, cs3, cs4 = st.columns(4)
-        triste = cs1.select_slider("💧 Triste", options=[1,2,3,4,5], key="t1")
-        spicy = cs2.select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="t2")
-        rire = cs3.select_slider("😊 Rire", options=[1,2,3,4,5], key="t3")
-        love = cs4.select_slider("❤️ Love", options=[1,2,3,4,5], key="t4")
-        
-        notes_l = st.text_area("🎵 Playlist & Citations")
-        if st.button("📥 Enregistrer dans ma bibliothèque"):
+    cat = st.radio("Sous-catégorie", ["🌿 Santé", "📖 Lecture"], horizontal=True)
+    if cat == "📖 Lecture":
+        st.markdown('<div style="background:#fdf5e6; padding:20px; border-radius:15px; border:1px solid #d2b48c;">', unsafe_allow_html=True)
+        t_liv = st.text_input("TITRE")
+        a_liv = st.text_input("AUTEUR")
+        img = st.file_uploader("📸 Photo Couverture", type=['jpg','png','jpeg'])
+        if img: st.image(img, width=150)
+        c_s = st.columns(4)
+        c_s[0].select_slider("💧 Triste", options=[1,2,3,4,5], key="l1")
+        c_s[1].select_slider("🌶️ Spicy", options=[1,2,3,4,5], key="l2")
+        c_s[2].select_slider("😊 Rire", options=[1,2,3,4,5], key="l3")
+        c_s[3].select_slider("❤️ Love", options=[1,2,3,4,5], key="l4")
+        if st.button("📥 Enregistrer le livre"):
             if sh and t_liv:
-                sh.worksheet("Lectures").append_row([t_liv, a_liv, datetime.now().strftime("%d/%m/%Y"), spicy, love, notes_l])
+                sh.worksheet("Lectures").append_row([t_liv, a_liv, datetime.now().strftime("%d/%m/%Y")])
                 st.success("Livre ajouté ! 📚")
         st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.slider("💧 Eau", 0, 10, 5)
-        st.slider("😴 Sommeil", 0, 12, 8)
 
 # --- COURSES ---
 with tabs[4]:
-    st.markdown("### 🛒 Courses")
-    items = ["Lait", "Oeufs", "Pain", "Fruits", "Légumes", "Eau"]
+    st.markdown("### 🛒 Liste de Courses")
+    items_rapides = ["Lait", "Oeufs", "Pain", "Fruits", "Légumes", "Eau"]
     cols_c = st.columns(6)
-    for i, it in enumerate(items):
+    for i, it in enumerate(items_rapides):
         if cols_c[i].button(it):
             if sh: sh.worksheet("Courses").append_row([it, user_nom]); st.rerun()
+    
+    autre_item = st.text_input("➕ Ajouter manuellement :")
+    if st.button("Ajouter à la liste"):
+        if sh and autre_item:
+            sh.worksheet("Courses").append_row([autre_item, user_nom]); st.rerun()
+
+# --- STICKERS ---
+with tabs[5]:
+    st.markdown("### 🎨 Ma Planche")
+    stickers_list = ["🌸", "🌿", "⭐", "🍃", "🍎", "🥑", "📅", "✨", "🎀", "🍪"]
+    cols_s = st.columns(5)
+    for i, s in enumerate(stickers_list):
+        if cols_s[i % 5].button(s, key=f"stk_{i}"): st.balloons()
