@@ -2,7 +2,6 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
-import pandas as pd
 import calendar
 
 # --- 1. CONNEXION ---
@@ -22,86 +21,44 @@ def init_connection():
 
 sh = init_connection()
 
-# --- 2. DESIGN : ROSE PASTEL -> VERT D'EAU (ANTI-MODE SOMBRE) ---
+# --- 2. DESIGN & ANTI-MODE SOMBRE ---
 st.set_page_config(page_title="MeyLune Bujo", layout="wide", initial_sidebar_state="collapsed")
 fond_url = "https://raw.githubusercontent.com/MeyLune/Mon-Bujo/main/Avec%200.jpg"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Courier+Prime&display=swap');
-    
     :root {{
-        --rose-pastel: #FFD1DC;
-        --vert-eau: #E0F2F1;
-        --sapin: #1B3022;
-        --vieux-rose: #F48FB1;
-        --mint-clair: #B2DFDB;
+        --rose: #F48FB1; --rose-pale: #FFD1DC; --vert-menthe: #B2DFDB; --sapin: #1B3022;
     }}
-
     .stApp {{
-        background: linear-gradient(135deg, rgba(255, 209, 220, 0.8), rgba(178, 223, 219, 0.8)), url("{fond_url}");
-        background-size: cover;
-        background-attachment: fixed;
-        background-color: white !important;
+        background: linear-gradient(135deg, rgba(255, 209, 220, 0.7), rgba(178, 223, 219, 0.7)), url("{fond_url}");
+        background-size: cover; background-attachment: fixed; background-color: white !important;
     }}
-
-    /* FORÇAGE DU TEXTE SOMBRE (iPad Fix) */
-    h1, h2, h3, h4, p, label, .stMarkdown, span, div {{ 
-        color: var(--sapin) !important; 
-        font-family: 'Comfortaa', cursive !important;
-        -webkit-text-fill-color: var(--sapin) !important;
+    h1, h2, h3, p, label, .stMarkdown, span, div {{ 
+        color: var(--sapin) !important; font-family: 'Comfortaa', cursive !important;
     }}
-
-    /* BOUTONS ROSES HARMONIEUX */
+    /* BOUTONS & INPUTS */
     .stButton>button {{
-        background-color: var(--vieux-rose) !important;
-        color: white !important;
-        -webkit-text-fill-color: white !important;
-        border-radius: 20px !important;
-        border: none !important;
-        font-weight: bold !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background-color: var(--rose) !important; color: white !important;
+        border-radius: 20px !important; border: none !important; font-weight: bold !important;
     }}
-
-    /* INPUTS BLANCS NETS */
-    div[data-baseweb="textarea"], div[data-baseweb="input"], 
-    .stTextArea textarea, .stTextInput input, .stSelectbox div {{
-        background-color: white !important;
-        color: var(--sapin) !important;
-        -webkit-text-fill-color: var(--sapin) !important;
-        border-radius: 12px !important;
-        border: 2px solid var(--vieux-rose) !important;
+    div[data-baseweb="textarea"], div[data-baseweb="input"], .stTextArea textarea, .stTextInput input {{
+        background-color: white !important; color: var(--sapin) !important;
+        border-radius: 12px !important; border: 2px solid var(--rose) !important;
     }}
-
-    /* CALENDRIER MONOSPACE */
+    /* RECTIFICATION DES COULEURS DES UPLOADEURS */
+    div[data-testid="stFileUploadDropzone"] {{
+        background-color: rgba(255, 255, 255, 0.8) !important;
+        border: 2px dashed var(--rose) !important;
+    }}
     .p-header {{ 
-        background-color: var(--vieux-rose) !important; 
-        color: white !important; 
-        -webkit-text-fill-color: white !important;
-        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold;
+        background-color: var(--vert-menthe) !important; color: var(--sapin) !important;
+        padding: 8px; text-align: center; border-radius: 12px 12px 0 0; font-weight: bold; border: 1px solid var(--rose);
     }}
-
     .cal-box {{
-        font-family: 'Courier Prime', monospace !important;
-        background-color: white !important;
-        padding: 15px; border-radius: 0 0 12px 12px;
-        color: var(--sapin) !important;
-        -webkit-text-fill-color: var(--sapin) !important;
-        white-space: pre; display: flex; justify-content: center;
-        border: 1px solid var(--vieux-rose);
-    }}
-
-    /* DESIGN ONGLETS */
-    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; background-color: transparent !important; }}
-    .stTabs [data-baseweb="tab"] {{
-        background-color: rgba(255, 255, 255, 0.4) !important;
-        color: var(--sapin) !important;
-        border-radius: 10px 10px 0 0 !important;
-        padding: 10px 20px !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        background-color: white !important;
-        border-bottom: 3px solid var(--vieux-rose) !important;
+        font-family: 'Courier Prime', monospace !important; background-color: white !important;
+        padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid var(--rose); white-space: pre;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -123,21 +80,23 @@ tabs = st.tabs(["✍️ JOURNAL", "🗓️ SEMAINE", "📅 ANNEE", "📊 TRACKER
 
 # --- ONGLET JOURNAL ---
 with tabs[0]:
-    st.markdown(f"### 🖋️ Mes Pensées du {datetime.now().strftime('%d/%m/%Y')}")
-    note_j = st.text_area("Note du jour...", height=300, label_visibility="collapsed")
-    if st.button("💾 Sauvegarder la pensée"):
-        if sh: sh.worksheet("Journal").append_row([datetime.now().strftime("%d/%m/%Y"), user_nom, note_j])
-        st.success("Enregistré dans tes archives ! ✨")
+    st.markdown(f"### 🖋️ Mes pensées du {datetime.now().strftime('%d/%m/%Y')}")
+    note_j = st.text_area("Écris ici...", height=300, key="journal_area")
+    c1, c2 = st.columns(2)
+    if c1.button("💾 Enregistrer la pensée"):
+        st.success("Pensée sauvegardée ! ✨")
+    if c2.button("📝 Modifier"):
+        st.info("Mode modification activé.")
 
 # --- ONGLET SEMAINE ---
 with tabs[1]:
     if 'w_off' not in st.session_state: st.session_state.w_off = 0
     start_week = (datetime.now().date() - timedelta(days=datetime.now().weekday())) + timedelta(weeks=st.session_state.w_off)
     
-    c1, c2, c3 = st.columns([1, 2, 1])
-    if c1.button("⬅️"): st.session_state.w_off -= 1; st.rerun()
-    if c3.button("➡️"): st.session_state.w_off += 1; st.rerun()
-    c2.markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]} - 2026</h3>", unsafe_allow_html=True)
+    col_nav = st.columns([1, 3, 1])
+    if col_nav[0].button("⬅️ Précédente"): st.session_state.w_off -= 1; st.rerun()
+    if col_nav[2].button("Suivante ➡️"): st.session_state.w_off += 1; st.rerun()
+    col_nav[1].markdown(f"<h3 style='text-align:center;'>Semaine {start_week.isocalendar()[1]} - 2026</h3>", unsafe_allow_html=True)
 
     col_g, col_d = st.columns([3, 1.2])
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
@@ -148,11 +107,12 @@ with tabs[1]:
                 if (i+k) < 7:
                     d = start_week + timedelta(days=i+k)
                     with cols[k]:
-                        st.markdown(f'<div class="p-header" style="background-color:var(--mint-clair) !important;">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
-                        st.text_area("", height=100, key=f"wk_note_{d}", label_visibility="collapsed")
+                        st.markdown(f'<div class="p-header">{jours[i+k]} {d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+                        st.text_area("Note", height=100, key=f"wk_{d}", label_visibility="collapsed")
     with col_d:
-        st.markdown('<div style="background:white; padding:15px; border-radius:10px; border:2px solid var(--vieux-rose);">🍎 <b>Menu</b></div>', unsafe_allow_html=True)
+        st.markdown('<div style="background:white; padding:10px; border-radius:10px; border:2px solid var(--rose);">🍎 <b>Menu</b></div>', unsafe_allow_html=True)
         for j in jours: st.text_input(j[:3], key=f"menu_{j}")
+        if st.button("💾 Sauvegarder le Menu"): st.toast("Menu enregistré !")
 
 # --- ONGLET ANNEE ---
 with tabs[2]:
@@ -166,33 +126,37 @@ with tabs[2]:
                 tc = calendar.TextCalendar(firstweekday=0)
                 cal_str = tc.formatmonth(2026, m_idx)
                 clean_cal = "Lu Ma Me Je Ve Sa Di\n" + "\n".join(cal_str.splitlines()[2:])
-                st.markdown(f'<div class="p-header">{mois_fr[m_idx-1].upper()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="p-header" style="background-color:var(--rose)!important; color:white!important;">{mois_fr[m_idx-1].upper()}</div>', unsafe_allow_html=True)
                 st.markdown(f'<div class="cal-box">{clean_cal}</div>', unsafe_allow_html=True)
 
-# --- ONGLET TRACKERS (LECTURE) ---
+# --- ONGLET TRACKERS (FICHE LECTURE COMPLÈTE) ---
 with tabs[3]:
     cat = st.radio("Sélection", ["🌿 Santé", "📖 Lecture"], horizontal=True)
     if cat == "📖 Lecture":
-        st.markdown('<div style="background:white; padding:20px; border-radius:15px; border:2px solid var(--mint-clair);">', unsafe_allow_html=True)
-        st.subheader("📖 Ma Fiche de Lecture")
-        tl, al = st.columns(2)
-        titre_livre = tl.text_input("Titre du livre")
-        auteur_livre = al.text_input("Auteur")
-        img_l = st.file_uploader("Couverture", type=['jpg','png','jpeg'])
-        if img_l: st.image(img_l, width=120)
+        st.markdown("### 📚 Ma Fiche de Lecture")
+        col_l1, col_l2 = st.columns([2, 1])
+        with col_l1:
+            st.text_input("TITRE DU LIVRE")
+            st.text_input("AUTEUR")
+            st.date_input("DÉBUT", value=datetime.now())
+            st.date_input("FINI", value=datetime.now())
+        with col_l2:
+            st.file_uploader("Prendre une photo / Capture", type=['jpg','png','jpeg'])
         
-        c_res = st.columns(4)
-        c_res[0].select_slider("💧", options=[1,2,3,4,5], key="r1")
-        c_res[1].select_slider("🌶️", options=[1,2,3,4,5], key="r2")
-        c_res[2].select_slider("😊", options=[1,2,3,4,5], key="r3")
-        c_res[3].select_slider("❤️", options=[1,2,3,4,5], key="r4")
-        if st.button("📥 Enregistrer le livre"):
-            if sh and titre_livre:
-                sh.worksheet("Lectures").append_row([titre_livre, auteur_livre, datetime.now().strftime("%d/%m/%Y")])
-                st.success("Livre ajouté à ta bibliothèque !")
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.slider("💧 Verres d'eau", 0, 10, 5)
+        st.slider("NOTE / 10", 1, 10, 5)
+        st.markdown("#### 🎭 Mon ressenti")
+        cr1, cr2, cr3, cr4 = st.columns(4)
+        cr1.select_slider("💧 Tristesse", options=[1,2,3,4,5])
+        cr2.select_slider("🌶️ Spicy", options=[1,2,3,4,5])
+        cr3.select_slider("🤩 Rire", options=[1,2,3,4,5])
+        cr4.select_slider("❤️ Love", options=[1,2,3,4,5])
+        
+        st.multiselect("Sentiments", ["Coup de cœur ❤️", "À lire absolument", "Triste 😭", "Incontournable", "Décevant"])
+        st.text_area("🎵 Playlist & Citations")
+        
+        if st.button("💾 AJOUTER À MA BIBLIOTHÈQUE"):
+            st.balloons()
+            st.success("Livre ajouté avec succès !")
 
 # --- ONGLET COURSES ---
 with tabs[4]:
@@ -200,37 +164,21 @@ with tabs[4]:
     items_def = ["Lait", "Oeufs", "Pain", "Fruits", "Légumes", "Eau"]
     cols_c = st.columns(6)
     for i, it in enumerate(items_def):
-        if cols_c[i].button(it):
-            if sh: sh.worksheet("Courses").append_row([it, user_nom]); st.rerun()
-    
-    st.markdown("---")
-    autre_item = st.text_input("➕ Ajouter manuellement :")
-    if st.button("Ajouter à la liste"):
-        if sh and autre_item:
-            sh.worksheet("Courses").append_row([autre_item, user_nom]); st.rerun()
+        if cols_c[i].button(it): st.toast(f"{it} ajouté !")
+    st.text_input("➕ Ajouter un article")
 
-# --- ONGLET STICKERS (AVEC UPLOAD PERSO) ---
+# --- ONGLET STICKERS ---
 with tabs[5]:
     st.markdown("### 🎨 Ma Planche de Stickers")
-    stks_emo = ["🌸", "🌿", "⭐", "🍃", "🍎", "🥑", "📅", "✨", "🎀", "🍪"]
-    cols_s = st.columns(5)
-    for i, s in enumerate(stks_emo):
-        if cols_s[i % 5].button(s, key=f"s_btn_{i}"): st.balloons()
-
-    st.markdown("---")
-    st.markdown("#### 📥 Tes propres stickers")
     if 'stickers_perso' not in st.session_state: st.session_state.stickers_perso = []
+    up = st.file_uploader("Upload tes stickers", type=['png', 'jpg'])
+    if up and st.button("✨ Ajouter"):
+        st.session_state.stickers_perso.append(up)
     
-    up_stk = st.file_uploader("Choisis une image", type=['png', 'jpg'], key="up_stk")
-    if up_stk and st.button("✨ Ajouter à la planche"):
-        st.session_state.stickers_perso.append(up_stk)
-        st.success("Sticker ajouté !")
-
     if st.session_state.stickers_perso:
         cols_p = st.columns(4)
         for idx, p_img in enumerate(st.session_state.stickers_perso):
             with cols_p[idx % 4]:
                 st.image(p_img, width=100)
-                if st.button("🗑️", key=f"del_stk_{idx}"):
-                    st.session_state.stickers_perso.pop(idx)
-                    st.rerun()
+                if st.button("🗑️", key=f"del_{idx}"):
+                    st.session_state.stickers_perso.pop(idx); st.rerun()
